@@ -349,8 +349,9 @@ func DeleteRoles(db *gorm.DB,ids []int) error {
 // 使用复合字面量在堆上创造了内存, 堆数据不会因为函数结束销毁,这个指针仍然有效
 func GetUserAuthInfoById (db *gorm.DB, id int) (*UserAuth,error){
 	userauth := UserAuth{Model: Model{ID : id}}
-	result := db.Model(&UserAuth{}).
+	result := db.Model(&userauth).
 				Preload("Roles").Preload("UserInfo").
 				First(&userauth)
+	
 	return &userauth,result.Error
 }

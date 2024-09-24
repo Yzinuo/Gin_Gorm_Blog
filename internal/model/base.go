@@ -45,11 +45,11 @@ func MakeMigrate(db *gorm.DB) error {
 		&Category{},     // 分类
 		&Tag{},          // 标签
 		&Comment{},      // 评论
-		// &Message{},      // 消息
-		// &FriendLink{},   // 友链
-		// &Page{},         // 页面
+		&Message{},      // 消息
+		&FriendLink{},   // 友链
+		&Page{},         // 页面
 		&Config{},       // 网站设置
-		// &OperationLog{}, // 操作日志
+		&OperationLog{}, // 操作日志
 		&UserInfo{},     // 用户信息
 
 		&UserAuth{},     // 用户验证
@@ -60,4 +60,31 @@ func MakeMigrate(db *gorm.DB) error {
 		&RoleResource{}, // 角色-资源 关联
 		&UserAuthRole{}, // 用户-角色 关联
 	)
+}
+
+// 使用泛型定义通用接口
+func List [T any] (db *gorm.DB,data T,slt,order string,qurry string,arg ...any)(T,error){
+			db = db.Model(data).Select(slt).Order(order)
+
+			if qurry != ""{
+				db = db.Where(qurry,arg...)
+			}
+
+			result := db.Find(&data)
+
+			if result.Error != nil{
+				return data,result.Error
+			}
+			return data,nil
+}
+
+
+func Count [T any] (db *gorm.DB,data T,where ...any)(int,error){
+		if len(where) > 0 {
+			db = db.Where(where[0], where[1:]...)
+		}
+
+		var total int64
+		result := db.Model(data).Count(&total)
+		return int(total),result.Error
 }
