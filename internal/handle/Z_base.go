@@ -22,8 +22,8 @@ type Response [T any]struct {
 }
 
 // HTTP code + code + msg + data
-func ReturnHttpResponse [T any] (c *gin.Context,httpcode int,code int, msg string,data T) {
-	c.JSON(httpcode,Response[T]{
+func ReturnHttpResponse  (c *gin.Context,httpcode int,code int, msg string,data any) {
+	c.JSON(httpcode,Response[any]{
 		Code : code,
 		Msg  : msg,
 		Data : data,
@@ -31,15 +31,15 @@ func ReturnHttpResponse [T any] (c *gin.Context,httpcode int,code int, msg strin
 }
 
 // Result + data
-func ReturnResponse [T any] (c *gin.Context,r g.Result,data T){
+func ReturnResponse  (c *gin.Context,r g.Result,data any){
 	ReturnHttpResponse(c,http.StatusOK,r.GetCode(),r.GetMsg(),data)
 }
 
 // data 
-func ReturnSuccess[T any](c *gin.Context, data T) {
+func ReturnSuccess(c *gin.Context, data any) {
 	ReturnResponse(c,g.OkReresult,data)
 }
-func ReturnFail [T any] (c *gin.Context,data T) {
+func ReturnFail (c *gin.Context,data any) {
 	ReturnResponse(c,g.FailResult,data)
 }
 

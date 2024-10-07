@@ -55,18 +55,22 @@ var(
 	FailResult = RegisterErrorCode(FAIL,"fail")
 	//常见错误
 	ErrRequest  = RegisterErrorCode(9001, "请求参数格式错误")
+	ErrDbOp     = RegisterErrorCode(9004, "数据库操作异常")
 
+	// 登录相关错误
+	ErrPassword     = RegisterErrorCode(1002, "密码错误")
+	ErrUserNotExist = RegisterErrorCode(1003, "该用户不存在")
+	ErrOldPassword  = RegisterErrorCode(1010, "旧密码不正确")
 
 	// jwt认证错误
-	
+	ErrTokenCreate      = RegisterResult(1205, "TOKEN 生成失败")
 	
 
 	// 数据库相关错误
-	ErrDbOp     = RegisterErrorCode(9004, "数据库操作异常")
 
 
-	// 上传错误
-
+	// 上传或获取文件
+	ErrFileReceive = RegisterErrorCode(9101, "文件接收失败")
 
 	// 注册错误
 )

@@ -3,6 +3,9 @@ package handle
 import (
 	g "gin-blog/internal/global"
 	model "gin-blog/internal/model"
+	"io"
+	"log/slog"
+	"mime/multipart"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -16,13 +19,13 @@ type AddOrEditeArticleReq struct {
 	Title   string	`json:"title"  binding:"required"` 
 	Desc 	string  `json:"desc"`
 	Content string  `json:"content" binding:"required"`
-	Img	string  `json:"imag"`
+	Img	string  	`json:"img"`
 	Status  int     `json:"status"  binding:"required,min=1,max = 3"`
 	Type 	int 	`json:"type"    binding:"required, min=1,max=3"`	
 	IsTop   bool 	`json:"is_top"`
 	OriginalUrl string `json:"original_url"`
 	
-	Tagnames  []string `json:"tagnames"`	
+	Tagnames  []string `json:"tag_names"`	
 	CategoryName string `json:"category_name"`
 }
 
@@ -133,7 +136,7 @@ func (*Article) DeleteArticle(c *gin.Context) {
 }
 
 // 查询文章
-func (*Article)QureyAticle(c *gin.Context,rdb *redis.Client) {
+func (*Article)GetList(c *gin.Context,rdb *redis.Client) {
 	Queryreq := QueryArticle{}
 	if err := c.ShouldBind(&Queryreq); err != nil{
 		ReturnError(c,g.ErrRequest,err)
@@ -177,4 +180,90 @@ func (*Article)QureyAticle(c *gin.Context,rdb *redis.Client) {
 	})
 }
 
+//通过GetArticle获取详细信息
+func (*Article)GetDetail(c *gin.Context){
+	Id,err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		ReturnError(c,g.ErrRequest,err)
+		return
+	}	
 
+	article,err := model.GetArticle(GetDB(c),Id)
+	if err != nil {
+		ReturnError(c,g.ErrDbOp,err)
+		return
+	}
+
+	ReturnSuccess(c,article)
+}
+
+//更新文章的TOP
+func (*Article)UPdateTOP(c *gin.Context){
+	var updatereq UpdateArticleTopReq
+
+	db := GetDB(c)
+	
+	if err := c.ShouldBind(&updatereq); err!= nil {
+		ReturnError(c,g.ErrRequest,err)
+		return
+	}
+
+	err := model.UpdatearticleTop(db,updatereq.ID,updatereq.IsTop)
+	if err != nil {
+		ReturnError(c,g.ErrDbOp,err)
+		return
+	}
+
+	ReturnSuccess(c,nil)
+}
+
+// 导出文章: 获取导出后的资源链接列表
+func (*Article)Export(c *gin.Context) {
+	ReturnSuccess(c,nil)
+}
+
+// 导入文章: 上传文件 从http请求中获取文件
+func  (*Article)Import(c *gin.Context){
+	db :=GetDB(c)
+	auth,_ := CurrentUserAuth(c)
+	
+	_,fileheader,err := c.Request.FormFile("file")
+	if err != nil {
+		ReturnError(c,g.ErrFileReceive,err)
+		return
+	}
+
+	filename := fileheader.Filename
+	title := filename[:len(filename)-3]
+	content,err := readFromFileHeader(fileheader)
+	if err != nil {
+		ReturnError(c,g.ErrFileReceive,err)
+		return
+	}
+	
+	defaultImg,_ := model.GetValueByKey(db,g.CONFIG_ARTICLE_COVER)
+	err = model.ImportArticle(db,auth.ID,title,content,defaultImg)
+	if err!= nil {
+		ReturnError(c,g.ErrDbOp,err)
+		return
+	}
+
+	ReturnSuccess(c,nil)
+}
+
+func readFromFileHeader(file *multipart.FileHeader) (string,error){
+	open,err := file.Open()
+	if err != nil {
+		slog.Error("打开文件错误，路径错误",err)
+		return "",err
+	}
+	defer open.Close()
+
+	all,err := io.ReadAll(open)
+	if err != nil {
+		slog.Error("读取文件错误",err)
+		return "",err
+	}
+	 
+	return string(all),nil
+}
