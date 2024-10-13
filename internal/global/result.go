@@ -63,7 +63,7 @@ var(
 	ErrOldPassword  = RegisterErrorCode(1010, "旧密码不正确")
 
 	// jwt认证错误
-	ErrTokenCreate      = RegisterResult(1205, "TOKEN 生成失败")
+	ErrTokenCreate      = RegisterErrorCode(1205, "TOKEN 生成失败")
 	
 
 	// 数据库相关错误

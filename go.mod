@@ -5,11 +5,15 @@ go 1.21.12
 require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/glebarez/sqlite v1.11.0
+	github.com/golang-jwt/jwt/v4 v4.5.0
+	github.com/lionsoul2014/ip2region/binding/golang v0.0.0-20240510055607-89e20ab7b6c6
 	github.com/stretchr/testify v1.9.0
 	gorm.io/gorm v1.25.12
+	xojoc.pw/useragent v0.0.0-20200116211053-1ec61d55e8fe
 )
 
 require (
+	github.com/blang/semver v2.2.0+incompatible // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/gorilla/context v1.1.2 // indirect

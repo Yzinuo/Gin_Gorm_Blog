@@ -64,8 +64,8 @@ func (*Auth) Login(c *gin.Context){
 	}
 
 	//更新登陆IP
-	Ipaddress,err := GetIpaddress()
-	IP := GetIpsource()
+	Ipaddress := utils.IP.GetIpaddress(c)
+	IP := utils.IP.GetIPsourceSimpleInfo(Ipaddress)
 
 	//获取userInfo （头像） AND 查询权限id
 	userinfo,err := model.GetUserInfoById(db,auth.ID)
@@ -102,7 +102,7 @@ func (*Auth) Login(c *gin.Context){
 
 	//生成Token
 	conf := g.Conf.JWT
-	token, err := jwt.GenToken(conf.Secret, conf.Issuer, int(conf.Expire), userAuth.ID, roleIds)
+	token, err := jwt.GenToken(conf.Secret, conf.Issuer, int(conf.Expire), auth.ID, roleids)
 	if err != nil {
 		ReturnError(c, g.ErrTokenCreate, err)
 		return
@@ -133,6 +133,7 @@ func (*Auth) Login(c *gin.Context){
 
 }
 
+// 登出就是删掉context，redis，session的用户信息
 func (*Auth) Logout(c *gin.Context){
 	c.Set(g.CTX_USER_AUTH, nil)
 	
