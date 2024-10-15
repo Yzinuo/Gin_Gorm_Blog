@@ -63,9 +63,12 @@ var(
 	ErrOldPassword  = RegisterErrorCode(1010, "旧密码不正确")
 
 	// jwt认证错误
+	ErrTokenNotExist    = RegisterErrorCode(1201, "TOKEN 不存在，请重新登陆")
+	ErrTokenRuntime     = RegisterErrorCode(1202, "TOKEN 已过期，请重新登陆")
+	ErrTokenWrong       = RegisterErrorCode(1203, "TOKEN 不正确，请重新登陆")
+	ErrTokenType        = RegisterErrorCode(1204, "TOKEN 格式错误，请重新登陆")
 	ErrTokenCreate      = RegisterErrorCode(1205, "TOKEN 生成失败")
-	
-
+	ErrPermission       = RegisterErrorCode(1206, "权限不足")
 	// 数据库相关错误
 
 

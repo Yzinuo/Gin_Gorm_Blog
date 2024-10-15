@@ -30,7 +30,7 @@ func GetResourceById (db *gorm.DB, id int) (resouce Resource,err error){
 	return resouce,result.Error
 }
 
-func GetResource (db gorm.DB,url,method string) (resource Resource,err error){
+func GetResource (db *gorm.DB,url,method string) (resource Resource,err error){
 	res := Resource{
 		Url: url,
 		Method: method,
