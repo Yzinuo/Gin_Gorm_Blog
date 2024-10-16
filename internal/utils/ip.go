@@ -112,6 +112,7 @@ func (i *IPutils) GetIPsourceSimpleInfo(IPaddress string) string{
 	return region[2] + region[3] +" "+ region[4]
 }
 
+// 获取访问的操作系统，客户端等
 func (*IPutils) GetUserAgent(c *gin.Context) *useragent.UserAgent {
 	return useragent.Parse(c.Request.UserAgent())
 }
