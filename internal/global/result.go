@@ -72,6 +72,8 @@ var(
 	ErrPermission       = RegisterErrorCode(1206, "权限不足")
 	// 数据库相关错误
 
+	// Tag and Category
+	ErrCateHasArt = RegisterErrorCode(3003, "删除失败，分类下存在文章")
 
 	// 上传或获取文件
 	ErrFileReceive = RegisterErrorCode(9101, "文件接收失败")

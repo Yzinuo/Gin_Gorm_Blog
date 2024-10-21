@@ -62,7 +62,7 @@ func DeleteCategory(db *gorm.DB,ids []int)(count int64,err error){
 	return db.RowsAffected,nil
 }
 
-func SaveOrUpdateCategory(db *gorm.DB,id int, name string) error{
+func SaveOrUpdateCategory(db *gorm.DB,id int, name string) (*Category,error){
 	category := Category{
 		Model: Model{ID: id},
 		Name: name,
@@ -75,5 +75,5 @@ func SaveOrUpdateCategory(db *gorm.DB,id int, name string) error{
 		result = db.Create(&category)
 	}
 
-	return result.Error
+	return &category,result.Error
 }

@@ -39,11 +39,11 @@ func UpdateConfigMap(db *gorm.DB,configMap map[string]string) error{
 	return nil
 }
 
-func FindOrCreateConfig(db *gorm.DB,key,value string) (*Config,error){
+func FindOrCreateConfig(db *gorm.DB,key,value string) error {
 	var config Config
 	result := db.Where("key",key).FirstOrCreate(&config)
 	if result.Error != nil {
-		return nil,result.Error
+		return result.Error
 	}
 
 	
@@ -51,26 +51,25 @@ func FindOrCreateConfig(db *gorm.DB,key,value string) (*Config,error){
 	result = db.Save(&config)
 
 	if result.Error != nil {
-		return nil,result.Error
+		return result.Error
 	}
 	
-
-	return &config,nil
+	return nil
 }
 
 
-func GetValueByKey(db *gorm.DB,key string) (string ,error){
+func GetValueByKey(db *gorm.DB,key string) (string){
 	var config Config
 	result := db.Model(&config).Where("key",key).First(&config)
 	if result.Error != nil {
-		return "",result.Error
+		return ""
 	}
 
-	return config.Value,nil
+	return config.Value
 }
 
 func GetConfigBool(db *gorm.DB,key string) bool{
-	value ,_ := GetValueByKey(db,key)
+	value := GetValueByKey(db,key)
 	if value == ""{
 		return false
 	}
@@ -78,7 +77,7 @@ func GetConfigBool(db *gorm.DB,key string) bool{
 }
 
 func GetConfigInt(db *gorm.DB,key string) int{
-	value,_ := GetValueByKey(db,key)
+	value:= GetValueByKey(db,key)
 	if value == ""{
 		return 0
 	}

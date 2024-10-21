@@ -69,7 +69,7 @@ func (*Article)SavaOrUpdateArticle (c *gin.Context) {
 	db := GetDB(c)
 
 	if req.Img == "" {
-		req.Img,_  = model.GetValueByKey(db,g.CONFIG_ARTICLE_COVER)
+		req.Img = model.GetValueByKey(db,g.CONFIG_ARTICLE_COVER)
 	}
 
 	if req.Type == 0 {
@@ -241,7 +241,7 @@ func  (*Article)Import(c *gin.Context){
 		return
 	}
 	
-	defaultImg,_ := model.GetValueByKey(db,g.CONFIG_ARTICLE_COVER)
+	defaultImg:= model.GetValueByKey(db,g.CONFIG_ARTICLE_COVER)
 	err = model.ImportArticle(db,auth.ID,title,content,defaultImg)
 	if err!= nil {
 		ReturnError(c,g.ErrDbOp,err)

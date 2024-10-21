@@ -11,6 +11,10 @@ const (
 const (
 	PAGE = "page" // 页面封面
 	CONFIG = "config" // 博客配置
+	VIEW_COUNT   = "view_count"  // 文章浏览数
+	VISITOR_AREA = "visitor_area" // 参观的地域
+
+	KEY_UNIQUE_VISITOR_SET = "unique_visitor" // 唯一用户记录 set
 
 	OFFLINE_USER = "offline_user:" // 强制下线用户
 	ONLINE_USER  = "online_user:"  // 在线用户
@@ -26,4 +30,6 @@ const (
 // config key
 const (
 	CONFIG_ARTICLE_COVER = "article_cover" // 文章封面
+	CONFIG_ABOUT             = "about"
+	CONFIG_IS_COMMENT_REVIEW = "is_comment_review" // 评论默认是否需要审核
 )

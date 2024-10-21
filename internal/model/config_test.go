@@ -55,7 +55,7 @@ func TestConfigSetGet(t *testing.T) {
 
 	FindOrCreateConfig(db, "name", "AAA")
 
-	val,_ := GetValueByKey(db, "name")
+	val:= GetValueByKey(db, "name")
 	assert.Equal(t, "AAA", val)
 
 	m, _ := GetConfigMap(db)
@@ -67,13 +67,13 @@ func TestCheckConfig(t *testing.T) {
 
 	{
 		FindOrCreateConfig(db, "name", "AAA")
-		val,_:= GetValueByKey(db, "name")
+		val:= GetValueByKey(db, "name")
 		assert.Equal(t, "AAA", val)
 	}
 
 	{
 		FindOrCreateConfig(db, "name", "BBB")
-		val,_:= GetValueByKey(db, "name")
+		val:= GetValueByKey(db, "name")
 		assert.Equal(t, "BBB", val)
 	}
 

@@ -29,7 +29,7 @@ func TestCategory(t *testing.T){
 	assert.Nil(t,erro)
 	assert.Equal(t,category.ID,cg.ID)
 
-	err = SaveOrUpdateCategory(db,1,"GOlang")
+	_,err = SaveOrUpdateCategory(db,1,"GOlang")
 	assert.Nil(t,err)
 
 }
