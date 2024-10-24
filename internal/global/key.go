@@ -11,6 +11,7 @@ const (
 const (
 	PAGE = "page" // 页面封面
 	CONFIG = "config" // 博客配置
+	
 	VIEW_COUNT   = "view_count"  // 文章浏览数
 	VISITOR_AREA = "visitor_area" // 参观的地域
 
@@ -24,6 +25,7 @@ const (
 	ARTICLE_VIEW_COUNT = "article_view_count" // 文章浏览数
 
 	COMMENT_USER_LIKE_SET = "comment_user_like:" // 评论点赞 Set
+	COMMENT_LIKE_COUNT    = "comment_like_count" // 评论点赞数
 	ARTICLE_COMMENT_COUNT = "article_comment_count" // 文章评论数
 )
 
