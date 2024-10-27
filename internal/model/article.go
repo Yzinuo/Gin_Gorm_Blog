@@ -37,7 +37,7 @@ type Article struct{
 	
 	//指定多对多关系的关联表 ： article_tag  它的article_id标签和本model关联
 	Tags		[]*Tag	`gorm:"many2many:article_tag;joinForeignKey:article_id;joinReferences:tag_id" json:"tags"`
-	// 定义外键 如Category就是定义CategoryId为指向Catefory的外键
+	// Belong to 关联模式 定义外键 如Category就是定义CategoryId为指向Catefory的外键
 	Category	*Category `gorm:"foreignkey:CategoryId" json:"category"`
 	User		*UserAuth `gorm:"foreignkey:UserId" json:"user"`
 }

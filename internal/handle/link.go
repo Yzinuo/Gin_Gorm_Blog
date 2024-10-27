@@ -21,7 +21,7 @@ type AddOrEditLinkReq struct{
 // 查询友链
 func  (*Link) GetList(c *gin.Context){
 	var query PageQuery
-	if err := c.ShouldBindJSON(&query); err != nil {
+	if err := c.ShouldBindQuery(&query); err != nil {
 		ReturnError(c,g.ErrRequest,err)
 		return
 	}

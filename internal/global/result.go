@@ -80,9 +80,14 @@ var(
 
 	// 注册错误
 
-	//菜单资源错误
+	//菜单资源 错误
+	ErrResourceNotExist    = RegisterErrorCode(6002, "该资源不存在")
+	ErrResourceUsedByRole  = RegisterErrorCode(6003, "该资源正在被角色使用，无法删除")
+	ErrResourceHasChildren = RegisterErrorCode(6004, "该资源下存在子资源，无法删除")
 	ErrMenuNotExist        = RegisterErrorCode(6006, "该菜单不存在")
 	ErrMenuUsedByRole      = RegisterErrorCode(6007, "该菜单正在被角色使用，无法删除")
 	ErrMenuHasChildren     = RegisterErrorCode(6008, "该菜单下存在子菜单，无法删除")
+
+	
 )
 

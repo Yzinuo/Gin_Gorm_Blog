@@ -394,7 +394,7 @@ func (*Front) LikeArticle(c *gin.Context){
 
 func (*Front) SearchArticle(c *gin.Context){
 	result := make([]ArticleSearchVO,0)
-	keyword := c.Param("keyword")
+	keyword := c.Query("keyword")
 	if keyword == ""{
 		ReturnError(c,g.ErrRequest,nil)
 		return
@@ -489,7 +489,7 @@ func substring(source string, start int, end int) string{
 	}
 
 	var substr string
-	for i:= start; i <= end ; i++{
+	for i:= start; i < end ; i++{
 		substr = substr + string(str[i])
 	}
 
