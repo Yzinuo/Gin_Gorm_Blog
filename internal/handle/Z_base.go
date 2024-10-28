@@ -98,7 +98,7 @@ type PageQuery struct{
 }
 
 // 1. 从Context中获取UserInfo，如果获取到说明context中已经保存了
-// 2. 从Session中获取UserInfo Uid
+// 2. 从Session中获取UserInfo Uid(通过解析token获取)
 // 3. 根据id从数据库中获取  然后在设置在gin context中
 func CurrentUserAuth(c *gin.Context) (*model.UserAuth,error){
 	// 1

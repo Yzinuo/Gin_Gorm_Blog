@@ -107,10 +107,106 @@ func (*Resource) Delete(c *gin.Context){
 		}
 	}
 	// 删除
-	if db.Delete(&model.Resource{},resourceId).Error != nil {
+	rows,err :=model.DeleteResource(db,resourceId)
+	if err != nil {
 		ReturnError(c,g.ErrDbOp,err)
 		return
 	}
 
-	ReturnSuccess(c,nil)
+	ReturnSuccess(c,rows)
 }
+
+// 获取资源树型结构
+func (*Resource) GetTreeList(c *gin.Context){
+	keyword := c.Query("keyword")
+	
+	resourcelist,err := model.GetResourceList(GetDB(c),keyword)
+	if err != nil {
+		ReturnError(c,g.ErrDbOp,err)
+		return
+	}
+
+	ReturnSuccess(c,resource2ResourceVos(resourcelist))
+}
+
+// 获取资源列表(树形)
+func (*Resource) GetOption(c *gin.Context) {
+	result := make([]TreeOptionVO, 0)
+
+	db := GetDB(c)
+	resources, err := model.GetResourceList(db, "")
+	if err != nil {
+		ReturnError(c, g.ErrDbOp, err)
+		return
+	}
+
+	parentList := getModuleList(resources)
+	childrenMap := getResourceChildrenMap(resources)
+
+	for _, item := range parentList {
+		var children []TreeOptionVO
+		for _, re := range childrenMap[item.ID] {
+			children = append(children, TreeOptionVO{
+				ID:    re.ID,
+				Label: re.Name,
+			})
+		}
+		result = append(result, TreeOptionVO{
+			ID:       item.ID,
+			Label:    item.Name,
+			Children: children,
+		})
+	}
+	ReturnSuccess(c, result)
+}
+
+// 把resource列表转换成ReourceTree型结构
+func resource2ResourceVos(resources []model.Resource) []ResourceTreeVO{
+	//首先遍历第一级的资源，为每一个一级资源创造一个子树
+	// 通过children map，丰富这个子树的children
+	result := make([]ResourceTreeVO,0)
+	first_level := getModuleList(resources)
+	childrenMap := getResourceChildrenMap(resources)
+
+	for _,resouce := range first_level{
+		resource_tree := resource2ResourceTreeVo(resouce)
+		for _,child := range childrenMap[resouce.ID]{
+			resource_tree.Children = append(resource_tree.Children, resource2ResourceTreeVo(child))
+		}
+		result = append(result, resource_tree)
+	}
+
+	return result
+}
+
+// 把单个resource转换成Tree型结构
+// 原型设计模式？
+func resource2ResourceTreeVo(resource model.Resource) ResourceTreeVO{
+	return ResourceTreeVO{ID: resource.ID, CreatedAt: resource.CreatedAt, Name: resource.Name, 
+							Url: resource.Url, Method: resource.Method, Anonymous: resource.Anonymous}
+}
+
+// 获取一级资源  parent_id == 0
+func getModuleList(resourcelist []model.Resource) []model.Resource{
+	first_level := make([]model.Resource,0)
+	for _,resource := range resourcelist{
+		if resource.ParentId == 0{
+			first_level = append(first_level,resource)
+		}
+	}
+
+	return first_level
+}
+
+// 获取每个模块下的资源map
+func getResourceChildrenMap(resourcelist []model.Resource) map[int][]model.Resource{
+	childrenMap := make(map[int][]model.Resource,0)
+	
+	for _,resource := range resourcelist{
+		if resource.ParentId!= 0{
+			childrenMap[resource.ParentId] = append(childrenMap[resource.ParentId],resource)
+		}
+	}
+	return childrenMap
+}
+
