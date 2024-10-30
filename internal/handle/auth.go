@@ -8,12 +8,13 @@ import (
 	"gin-blog/internal/utils/jwt"
 	"log/slog"
 	"strconv"
+
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
-type Auth struct {}
+type Auth struct{}
 
 type LoginReq struct {
 	Username string `json:"username"`
@@ -23,44 +24,44 @@ type LoginReq struct {
 type RegisterReq struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
-	Code 	 string `json:"code"`
+	Code     string `json:"code"`
 }
 
-type LoginVO struct{
+type LoginVO struct {
 	model.UserInfo
 	// 记录自己点赞的文章和评论
-	ArticleLikeList []string 		`json:"article_like_list"`
-	CommentLikeList []string		`json:"comment_like_list"`
-	Token 			string			`json:"token"`
+	ArticleLikeList []string `json:"article_like_list"`
+	CommentLikeList []string `json:"comment_like_list"`
+	Token           string   `json:"token"`
 }
 
 // 用户登陆
-func (*Auth) Login(c *gin.Context){
+func (*Auth) Login(c *gin.Context) {
 	var logreq LoginReq
-	
+
 	db := GetDB(c)
 	rdb := GetRDB(c)
-	
-	if err := c.ShouldBind(&logreq); err != nil{
-		ReturnError(c,g.ErrRequest,err)
+
+	if err := c.ShouldBind(&logreq); err != nil {
+		ReturnError(c, g.ErrRequest, err)
 		return
 	}
-	
+
 	// 查询用户信息
-	auth,err := model.GetUserAuthInfoByName(db,logreq.Username)
+	auth, err := model.GetUserAuthInfoByName(db, logreq.Username)
 	if err != nil {
-		if errors.Is(err,gorm.ErrRecordNotFound){
-			ReturnError(c,g.ErrUserNotExist,err)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ReturnError(c, g.ErrUserNotExist, err)
 			return
 		}
-		ReturnError(c,g.ErrDbOp,err)
+		ReturnError(c, g.ErrDbOp, err)
 		return
 	}
 
 	//验证密码
-	if !utils.BcrypyCheck(logreq.Password,auth.Password){
-		ReturnError(c,g.ErrPassword,err)
-		return		
+	if !utils.BcryptCheck(logreq.Password, auth.Password) {
+		ReturnError(c, g.ErrPassword, err)
+		return
 	}
 
 	//更新登陆IP
@@ -68,23 +69,23 @@ func (*Auth) Login(c *gin.Context){
 	IP := utils.IP.GetIPsourceSimpleInfo(Ipaddress)
 
 	//获取userInfo （头像） AND 查询权限id
-	userinfo,err := model.GetUserInfoById(db,auth.ID)
+	userinfo, err := model.GetUserInfoById(db, auth.ID)
 	if err != nil {
-		if errors.Is(err,gorm.ErrRecordNotFound){
-			ReturnError(c,g.ErrUserNotExist,err)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ReturnError(c, g.ErrUserNotExist, err)
 			return
 		}
-		ReturnError(c,g.ErrDbOp,err)
+		ReturnError(c, g.ErrDbOp, err)
 		return
 	}
-	
-	roleids,err := model.GetRoleIdsByUserId(db,auth.ID)
-	if err !=nil {
-		if errors.Is(err,gorm.ErrRecordNotFound){
-			ReturnError(c,g.ErrUserNotExist,err)
+
+	roleids, err := model.GetRoleIdsByUserId(db, auth.ID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ReturnError(c, g.ErrUserNotExist, err)
 			return
 		}
-		ReturnError(c,g.ErrDbOp,err)
+		ReturnError(c, g.ErrDbOp, err)
 		return
 	}
 
@@ -109,7 +110,7 @@ func (*Auth) Login(c *gin.Context){
 	}
 
 	// 更新用户登陆信息
-	err = model.UpdateUserLoginInfo(db,auth.ID,Ipaddress,IP)
+	err = model.UpdateUserLoginInfo(db, auth.ID, Ipaddress, IP)
 	if err != nil {
 		ReturnError(c, g.ErrDbOp, err)
 	}
@@ -117,42 +118,42 @@ func (*Auth) Login(c *gin.Context){
 	// session更新用户信息
 	slog.Info("登录成功 ！")
 	session := sessions.Default(c)
-	session.Set(g.CTX_USER_AUTH,auth.ID)
+	session.Set(g.CTX_USER_AUTH, auth.ID)
 	session.Save()
 
 	//为了防止在缓存中同时存在在线和强制下线两种状态，删除下线状态
-	offlineuser := g.OFFLINE_USER+strconv.Itoa(auth.ID)
-	rdb.Del(rdbctx,offlineuser)
-	
-	ReturnSuccess(c,LoginVO{
-		UserInfo: *userinfo,
+	offlineuser := g.OFFLINE_USER + strconv.Itoa(auth.ID)
+	rdb.Del(rdbctx, offlineuser)
+
+	ReturnSuccess(c, LoginVO{
+		UserInfo:        *userinfo,
 		ArticleLikeList: articleLikeSet,
 		CommentLikeList: commentLikeSet,
-		Token: token,
+		Token:           token,
 	})
 
 }
 
 // 登出就是删掉context，redis，session的用户信息
-func (*Auth) Logout(c *gin.Context){
+func (*Auth) Logout(c *gin.Context) {
 	c.Set(g.CTX_USER_AUTH, nil)
-	
-	auth,_ := CurrentUserAuth(c)
+
+	auth, _ := CurrentUserAuth(c)
 	//已经被删除
-	if  auth == nil {
-		ReturnSuccess(c,nil)
+	if auth == nil {
+		ReturnSuccess(c, nil)
 		return
 	}
 
 	session := sessions.Default(c)
 	session.Delete(g.CTX_USER_AUTH)
 	session.Save()
-	
-	rdb := GetRDB(c)
-	OnlineUser := g.ONLINE_USER+strconv.Itoa(auth.ID)
-	rdb.Del(rdbctx,OnlineUser)
 
-	ReturnSuccess(c,nil)	
+	rdb := GetRDB(c)
+	OnlineUser := g.ONLINE_USER + strconv.Itoa(auth.ID)
+	rdb.Del(rdbctx, OnlineUser)
+
+	ReturnSuccess(c, nil)
 }
 func (*Auth) Register(c *gin.Context) {
 	ReturnSuccess(c, "注册")

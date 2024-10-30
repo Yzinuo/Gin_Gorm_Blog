@@ -70,13 +70,17 @@ var(
 	ErrTokenType        = RegisterErrorCode(1204, "TOKEN 格式错误，请重新登陆")
 	ErrTokenCreate      = RegisterErrorCode(1205, "TOKEN 生成失败")
 	ErrPermission       = RegisterErrorCode(1206, "权限不足")
+	ErrForceOffline     = RegisterErrorCode(1207, "您已被强制下线")
+	ErrForceOfflineSelf = RegisterErrorCode(1208, "不能强制下线自己")
 	// 数据库相关错误
 
 	// Tag and Category
+	ErrTagHasArt  = RegisterErrorCode(4003, "删除失败，标签下存在文章")
 	ErrCateHasArt = RegisterErrorCode(3003, "删除失败，分类下存在文章")
 
 	// 上传或获取文件
 	ErrFileReceive = RegisterErrorCode(9101, "文件接收失败")
+	ErrFileUpload  = RegisterErrorCode(9100, "文件上传失败")
 
 	// 注册错误
 
