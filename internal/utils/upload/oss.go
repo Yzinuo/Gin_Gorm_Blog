@@ -8,7 +8,7 @@ import (
 )
 
 // Object Storage Service
-// 面向接口编程，OSS可选七牛云，阿里云，腾讯云等，方便切换使用接口
+// 面向接口编程，OSS可选七牛云，阿里云，腾讯云等，方便切换使用接口  适配器模式
 type OSS interface {
 	UploadFile(file *multipart.FileHeader) (string,string,error)
 	DeleteFile(key string) error

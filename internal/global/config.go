@@ -1,5 +1,7 @@
 package global
 
+import "log"
+
 type Config struct {
 	JWT struct {
 		Secret string
@@ -25,3 +27,12 @@ type Config struct {
 }
 
 var Conf *Config
+
+func GetConfig() *Config{
+	if Conf == nil {
+		log.Panic("配置还没有初始化")
+		return nil
+	}
+	
+	return Conf
+}

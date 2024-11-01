@@ -92,12 +92,12 @@ func (*Auth) Login(c *gin.Context) {
 	// 从redis缓存中直接获取 点赞的文章和评论
 	articleLikeSet, err := rdb.SMembers(rdbctx, g.ARTICLE_USER_LIKE_SET+strconv.Itoa(auth.ID)).Result()
 	if err != nil {
-		ReturnError(c, g.ErrDbOp, err)
+		ReturnError(c, g.ErrRedisOp, err)
 		return
 	}
 	commentLikeSet, err := rdb.SMembers(rdbctx, g.COMMENT_USER_LIKE_SET+strconv.Itoa(auth.ID)).Result()
 	if err != nil {
-		ReturnError(c, g.ErrDbOp, err)
+		ReturnError(c, g.ErrRedisOp, err)
 		return
 	}
 

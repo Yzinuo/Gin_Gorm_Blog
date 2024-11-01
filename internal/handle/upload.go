@@ -17,7 +17,7 @@ func(*Upload) UploadFile(c *gin.Context){
 
 	// 文件存储接口
 	oss := upload.NewOSS()
-	filepath,err := oss.UploadFile(fileHeader)
+	filepath,_,err := oss.UploadFile(fileHeader)
 	if err != nil {
 		ReturnError(c,g.ErrFileUpload,err)
 		return

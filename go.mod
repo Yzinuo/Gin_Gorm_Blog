@@ -7,18 +7,31 @@ require (
 	github.com/glebarez/sqlite v1.11.0
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/lionsoul2014/ip2region/binding/golang v0.0.0-20240510055607-89e20ab7b6c6
+	github.com/qiniu/go-sdk/v7 v7.25.0
 	github.com/stretchr/testify v1.9.0
 	gorm.io/gorm v1.25.12
 	xojoc.pw/useragent v0.0.0-20200116211053-1ec61d55e8fe
 )
 
 require (
+	github.com/BurntSushi/toml v1.3.2 // indirect
+	github.com/alex-ant/gomath v0.0.0-20160516115720-89013a210a82 // indirect
 	github.com/blang/semver v2.2.0+incompatible // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
+	github.com/elastic/go-sysinfo v1.0.2 // indirect
+	github.com/elastic/go-windows v1.0.0 // indirect
+	github.com/gammazero/toposort v0.1.1 // indirect
+	github.com/gofrs/flock v0.8.1 // indirect
 	github.com/gorilla/context v1.1.2 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/gorilla/sessions v1.2.2 // indirect
+	github.com/joeshaw/multierror v0.0.0-20140124173710-69b34d4ec901 // indirect
+	github.com/pkg/errors v0.8.1 // indirect
+	github.com/prometheus/procfs v0.0.0-20190425082905-87a4384529e0 // indirect
+	golang.org/x/sync v0.6.0 // indirect
+	howett.net/plist v0.0.0-20181124034731-591f970eefbb // indirect
+	modernc.org/fileutil v1.0.0 // indirect
 )
 
 require (
