@@ -57,6 +57,7 @@ var(
 	ErrRequest  = RegisterErrorCode(9001, "请求参数格式错误")
 	ErrDbOp     = RegisterErrorCode(9004, "数据库操作异常")
 	ErrRedisOp  = RegisterErrorCode(9005, "Redis 操作异常")
+	ErrUserAuth = RegisterErrorCode(9006, "用户认证异常")
 
 	// 登录相关错误
 	ErrPassword     = RegisterErrorCode(1002, "密码错误")
