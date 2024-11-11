@@ -72,7 +72,7 @@ type Menu struct {
 	Name			string		`gorm:"uniqueIndex:idx_name_and_path;type:varchar(20)" json:"name"`
 	Path			string		`gorm:"uniqueIndex:idx_name_and_path;type:varchar(50)"`
 	Component		string		`gorm:"type:varchar(50)" json:"component"`
-	Icon			string		`gorm:"type:varhcar(50)" json:"icon"`
+	Icon			string		`gorm:"type:varchar(50)" json:"icon"`
 	OrderNum		int8		`json:"order_num"` // 指定显示顺序
 	Redirect		string		`gorm:"type:varchar(50)" json:"redirect"`
 	Catalogue		string		`json:"is_catalogue"`

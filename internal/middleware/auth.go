@@ -16,7 +16,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// 利用JWT实现快速身份认证，实现API的权限控制
+// 利用JWT实现快速身份认证，实现API的权限控制 和 登录状态的记录(session 的用户数据由jwt生成，如果session中没有用户信息，在currentauth中算没有登录)
 // 中间件为了实现延迟执行,所以一般都是闭包
 func JWTAuth() gin.HandlerFunc{
 	return func(c *gin.Context){
@@ -33,6 +33,7 @@ func JWTAuth() gin.HandlerFunc{
 				c.Set("skip_auth_Check",true)
 				c.Next()
 				c.Set("skip_auth_Check",false)
+				return
 			}
 			handle.ReturnError(c,g.ErrDbOp,err)
 			return

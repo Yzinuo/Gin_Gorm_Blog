@@ -52,20 +52,22 @@ type ForceOfflineReq struct {
 
 // 从redis中获取用户点赞信息后，返回用户信息
 func (*User) GetInfo(c *gin.Context) {
-	userInfo := model.UserInfoVO{}
+	user, err := CurrentUserAuth(c)
+	if err != nil {
+		ReturnError(c, g.ErrTokenRuntime, err)
+		return
+	}
+	userInfo := model.UserInfoVO{UserInfo: *user.UserInfo}
 
-	auth, _ := CurrentUserAuth(c)
-	userInfo.UserInfo = *auth.UserInfo
 	rdb := GetRDB(c)
 
 	//从redis中获取用户点赞信息
-	var err error
-	userInfo.ArticleLikeSet, err = rdb.SMembers(rdbctx, g.ARTICLE_USER_LIKE_SET+strconv.Itoa(auth.ID)).Result()
+	userInfo.ArticleLikeSet, err = rdb.SMembers(rdbctx, g.ARTICLE_USER_LIKE_SET+strconv.Itoa(user.ID)).Result()
 	if err != nil {
 		ReturnError(c, g.ErrRedisOp, err)
 		return
 	}
-	userInfo.CommentLikeSet, err = rdb.SMembers(rdbctx, g.COMMENT_USER_LIKE_SET+strconv.Itoa(auth.ID)).Result()
+	userInfo.CommentLikeSet, err = rdb.SMembers(rdbctx, g.COMMENT_USER_LIKE_SET+strconv.Itoa(user.ID)).Result()
 	if err != nil {
 		ReturnError(c, g.ErrRedisOp, err)
 		return

@@ -1,4 +1,5 @@
 # http方法 POST PUT PATCH 的区别
+---
 ## POST
 ## 用途:
      用于向服务器提交数据，通常用于创建新资源。
@@ -65,3 +66,21 @@ POST: 用于创建新资源或批量操作，非幂等。
 PUT: 用于完全替换现有资源，幂等。
 
 PATCH: 用于部分更新资源，通常非幂等。
+
+## handler 处理 GET 和 POST 请求中数据的区别
+对于 **GET** 请求，参数通常通过 URL 传递。Gin 提供了 `c.Query` 和 `c.Param` 方法来解析这些参数。
+
+- c.Query：用于解析 URL 中的查询参数（即 ?key=value 部分）。
+
+- c.Param：用于解析 URL 路径中的参数（即路由中的占位符部分）。
+
+对于 **POST**请求，参数可以通过多种方式传递，如表单参数、JSON 参数等。Gin 提供了相应的方法来解析这些参数。
+
+-`c.PostForm`：用于解析表单参数（即 application/x-www-form-urlencoded 或 multipart/form-data 类型的请求体）。
+
+-`c.BindJSON`：用于解析 JSON 参数（即 application/json 类型的请求体）。
+
+
+# Gin 使用细节
+## 动态参数
+例如在 `"/comment/like/:comment_id"` 中，就把like后面的参数作为动态参数，在handler中使用 `c.Param("comment_id")` 来获取。

@@ -9,7 +9,6 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis/v9"
 )
 
 type Article struct {}
@@ -59,7 +58,7 @@ type ArticleVO struct{
 }
 
 // 增或改文章
-func (*Article)SavaOrUpdateArticle (c *gin.Context) {
+func (*Article)SavaOrUpdate (c *gin.Context) {
 	req := AddOrEditeArticleReq{}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		ReturnError(c,g.ErrRequest,err)
@@ -136,7 +135,7 @@ func (*Article) DeleteArticle(c *gin.Context) {
 }
 
 // 查询文章
-func (*Article)GetList(c *gin.Context,rdb *redis.Client) {
+func (*Article)GetList(c *gin.Context) {
 	Queryreq := QueryArticle{}
 	if err := c.ShouldBind(&Queryreq); err != nil{
 		ReturnError(c,g.ErrRequest,err)
@@ -150,6 +149,7 @@ func (*Article)GetList(c *gin.Context,rdb *redis.Client) {
 		return
 	}
 	
+	rdb := GetRDB(c)
 	likeCountMap := rdb.HGetAll(c,g.ARTICLE_LIKE_COUNT).Val()
 	viewCount := rdb.ZRangeWithScores(c,g.ARTICLE_VIEW_COUNT,0,-1).Val()
 

@@ -163,13 +163,13 @@ func GetRecommandList(db *gorm.DB,id,n int)(list []RecommendArticleVO,err error)
 	// WHERE `aticle_id != ?`
 	sub2 := db.Table("(?) t",sub1).
 			Select("DISTINCT article_id").
-			Joins("JOIN article_tag ON article_tag.id = t.tag_id").
+			Joins("JOIN article_tag t1 ON t1.tag_id = t.tag_id").
 			Where("article_id != ?",id)
 
 	// 更据得到的文章id 去Article数据库中找到对应信息
-	result := db.Table("(?) t1",sub2).
+	result := db.Table("(?) t2",sub2).
 			  Select("id","title","img","created_at").
-			  Joins("JOIN article ON article.id = t1.article_id").
+			  Joins("JOIN article ON article.id = t2.article_id").
 			  Where("is_delete",0).
 			  Order("is_top desc, id desc").
 			  Limit(n).
@@ -188,7 +188,7 @@ func GetLastArticle(db *gorm.DB,id int) (list ArticlePaginationVO,err error){
 	// SELECT `id,img,title` FROM `article` WHERE `id = sub1`
 	result := db.Table("article").
 			Select("id,img,title").
-			Where("id = ? AND is_delete = 0 AND status = 1",sub1).
+			Where("id = (?) AND is_delete = 0 AND status = 1",sub1).
 			Limit(1).
 			Find(&list)
 	
@@ -197,15 +197,11 @@ func GetLastArticle(db *gorm.DB,id int) (list ArticlePaginationVO,err error){
 
 // 查询下一个文章
 func GetNextArticle(db *gorm.DB,id int) (list ArticlePaginationVO,err error){
-	//Select min(id) FROM article WHERE id > id
-	sub1 := db.Table("article").
-			Select("min(id)").
-			Where("id > ?",id)
 	
 	// SELECT `id,img,title` FROM `article` WHERE `id = sub1`
 	result := db.Table("article").
 			Select("id,img,title").
-			Where("id = ? AND is_delete = 0 AND status = 1",sub1).
+			Where("id > ? AND is_delete = 0 AND status = 1",id).
 			Limit(1).
 			Find(&list)
 	

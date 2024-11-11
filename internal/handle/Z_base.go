@@ -85,15 +85,15 @@ func GetRDB(c *gin.Context) *redis.Client {
 
 // 分页获取数据
 type PageList [T any] struct {
-	Page  int 	 `json:"page"`
-	Size  int 	 `json:"size"`
+	Page  int 	 `json:"page_num"`
+	Size  int 	 `json:"page_size"`
 	Total int64  `json:"total"`
 	Data  []T  	 `json:"page_data"`	
 }
 
 type PageQuery struct{
-	Page  int `form:"page"`
-	Size  int `form:"size"`
+	Page  int `form:"page_num"`
+	Size  int `form:"page_size"`
 	Keyword string `form:"keyword"`
 }
 
@@ -112,15 +112,18 @@ func CurrentUserAuth(c *gin.Context) (*model.UserAuth,error){
 	 s := sessions.Default(c)
 	 id := s.Get(key)
 	 
+	
 	// 3
 	if id != nil{
 		db := GetDB(c)
 		userauth,err := model.GetUserAuthInfoById(db,id.(int))
 		
-		c.Set(key,userauth)
 		if err != nil{
 			return nil,err
 		}
+		c.Set(key,userauth)
+		return userauth,nil
 	}
+	
 	return nil,errors.New("session中没有 user_auth_id")
 }

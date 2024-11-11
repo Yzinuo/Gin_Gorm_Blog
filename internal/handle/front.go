@@ -23,12 +23,12 @@ type FAddMessageReq struct {
 	Speed    int 	`json:"speed"`
 }
 
-type FaddCommentReq struct {
-	ReplyUserId   int  		`json:"reply_user_id" form:"reply_user_id"`
-	TopicId   	  int   	`json:"topic_id"  form:"topic_id"`
-	Content       string 	`json:"content" form:"content"`
-	ParentId      int 		`json:"parent_id" form:"parent_id"`
-	Type		  int       `json:"type" form:"type"  validate:"required,min=1,max=3" label:"评论类型"`
+type FAddCommentReq struct {
+	ReplyUserId int    `json:"reply_user_id" form:"reply_user_id"`
+	TopicId     int    `json:"topic_id" form:"topic_id"`
+	Content     string `json:"content" form:"content"`
+	ParentId    int    `json:"parent_id" form:"parent_id"`
+	Type        int    `json:"type" form:"type" validate:"required,min=1,max=3" label:"评论类型"`
 }
 
 type FCommentQuery struct {
@@ -137,7 +137,7 @@ func (*Front) SaveMessage(c *gin.Context){
 
 // 新增评论
 func (*Front) SaveComment(c *gin.Context){
-	var req FaddCommentReq
+	var req FAddCommentReq
 	if err := c.ShouldBindJSON(&req); err!=nil {
 		ReturnError(c,g.ErrRequest,err)
 		return
@@ -147,22 +147,19 @@ func (*Front) SaveComment(c *gin.Context){
 	auth,_ := CurrentUserAuth(c)
 
 	Isreviewed := model.GetConfigBool(db,g.CONFIG_IS_COMMENT_REVIEW)
-	info := auth.UserInfo
 
 	var data *model.Comment
 	var err error
 	if req.ReplyUserId == 0{
-		data,err = model.AddComment(db,info.ID,req.Type,req.TopicId,req.Content,Isreviewed)
-		if err != nil{
-			ReturnError(c,g.ErrDbOp,err)
-			return
-		}
+		data,err = model.AddComment(db,auth.ID,req.Type,req.TopicId,req.Content,Isreviewed)
+		
 	}else {
-		data,err = model.AddReplyComment(db,info.ID,req.ReplyUserId,req.ParentId,req.Content,Isreviewed)
-		if err != nil{
-			ReturnError(c,g.ErrDbOp,err)
-			return
-		}
+		data,err = model.AddReplyComment(db,auth.ID,req.ReplyUserId,req.ParentId,req.Content,Isreviewed)
+	}
+	
+	if err != nil{
+		ReturnError(c,g.ErrDbOp,err)
+		return
 	}
 
 	ReturnSuccess(c,data)
@@ -203,7 +200,7 @@ func (*Front) GetCommentList(c *gin.Context){
 
 // 获取评论的回复列表
 func (*Front) GetReplyListByCommentId(c *gin.Context){
-	commentid,err := strconv.Atoi(c.Param("commnet_id"))
+	commentid,err := strconv.Atoi(c.Param("comment_id"))
 	if err!= nil {
 		ReturnError(c,g.ErrRequest,err)
 		return

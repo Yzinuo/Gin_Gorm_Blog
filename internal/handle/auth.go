@@ -17,14 +17,14 @@ import (
 type Auth struct{}
 
 type LoginReq struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
 }
 
 type RegisterReq struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Code     string `json:"code"`
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required,min=4,max=20"`
+	Code     string `json:"code"  binding:"required"`
 }
 
 type LoginVO struct {
@@ -69,7 +69,7 @@ func (*Auth) Login(c *gin.Context) {
 	IP := utils.IP.GetIPsourceSimpleInfo(Ipaddress)
 
 	//获取userInfo （头像） AND 查询权限id
-	userinfo, err := model.GetUserInfoById(db, auth.ID)
+	userinfo, err := model.GetUserInfoById(db, auth.UserInfoId)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			ReturnError(c, g.ErrUserNotExist, err)
@@ -123,7 +123,7 @@ func (*Auth) Login(c *gin.Context) {
 
 	//为了防止在缓存中同时存在在线和强制下线两种状态，删除下线状态
 	offlineuser := g.OFFLINE_USER + strconv.Itoa(auth.ID)
-	rdb.Del(rdbctx, offlineuser)
+	rdb.Del(rdbctx, offlineuser).Result()
 
 	ReturnSuccess(c, LoginVO{
 		UserInfo:        *userinfo,
