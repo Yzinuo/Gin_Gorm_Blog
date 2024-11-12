@@ -84,8 +84,13 @@ func (*User) UpdateCurrent(c *gin.Context) {
 		return
 	}
 
-	auth, _ := CurrentUserAuth(c)
-	err := model.UpdateUserInfo(GetDB(c), auth.UserInfoId, req.Nickname, req.Avatar, req.Intro, req.Website)
+	auth, err:= CurrentUserAuth(c)
+	if err != nil{
+		ReturnError(c,g.ErrTokenRuntime,err)
+		return
+	}
+	
+	err = model.UpdateUserInfo(GetDB(c), auth.UserInfoId, req.Nickname, req.Avatar, req.Intro, req.Website)
 	if err != nil {
 		ReturnError(c, g.ErrDbOp, err)
 		return

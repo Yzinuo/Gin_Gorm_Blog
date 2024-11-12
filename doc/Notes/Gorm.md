@@ -159,3 +159,20 @@ func Paginate(page, size int) func(db *gorm.DB) *gorm.DB{
 	}
 }
 ```
+
+# 不可寻指错误
+---
+在 Go 语言中，只有**可寻址的值**（addressable value）才能被赋值。不可寻址的值包括：
+
+- 字面量（如 123、"hello"）
+
+- 常量
+
+- 函数的返回值（除非返回的是指针）
+
+- 映射（map）中的元素
+
+- 切片（slice）中的元素（除非切片本身是可寻址的）
+
+我们需要确保在gorm操作中，Find，First，Scan等方法的参数是可寻址的，这样gorm反射操作才不会出问题。
+而`指针是可寻址的`，因此Find，First，Scan等方法的参数是指针，而不是变量本身。

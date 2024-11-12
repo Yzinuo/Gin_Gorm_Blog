@@ -42,8 +42,8 @@ type FCommentQuery struct {
 
 type FArticleQuery struct {
 	PageQuery
-	CategoryId   int	`json:"category_id"`
-	TagId        int	`json:"tag_id"`
+	CategoryId   int	`form:"category_id"`
+	TagId        int	`form:"tag_id"`
 }
 
 type ArchiveVO struct{
@@ -113,6 +113,12 @@ func (*Front) GetLinkList(c *gin.Context) {
 
 //新增留言
 func (*Front) SaveMessage(c *gin.Context){
+	auth,err := CurrentUserAuth(c)
+	if err != nil {
+		ReturnError(c,g.ErrTokenRuntime,err)
+		return
+	}
+	
 	var req FAddMessageReq
 	db := GetDB(c)
 
@@ -121,7 +127,7 @@ func (*Front) SaveMessage(c *gin.Context){
 		return
 	}
 
-	auth,_ := CurrentUserAuth(c)
+
 	ipaddress := utils.IP.GetIpaddress(c)
 	source := utils.IP.GetIPsource(ipaddress)
 	Isreviewed := model.GetConfigBool(db,g.CONFIG_IS_COMMENT_REVIEW)
@@ -209,7 +215,7 @@ func (*Front) GetReplyListByCommentId(c *gin.Context){
 	rdb := GetRDB(c)
 
 	var query PageQuery
-	if err = c.ShouldBindJSON(&query);err != nil{
+	if err = c.ShouldBindQuery(&query);err != nil{
 		ReturnError(c,g.ErrRequest,err)
 		return
 	}

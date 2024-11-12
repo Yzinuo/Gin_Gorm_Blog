@@ -8,8 +8,8 @@ import (
 
 type Tag struct{
 	Model
-	Name	string		`gorm:"type:varchar(20); unique; not null"`	
-	Article	[]*Article	`gorm:"many2many:article_tag;joinForeignKey:tag_id;joinReferences:article_id" json:"articles,omitempty"`
+	Name	string		`gorm:"type:varchar(20); unique; not null" json:"name"`	
+	Article	[]*Article	`gorm:"many2many:article_tag;" json:"articles,omitempty"`
 }
 
 type TagVO struct{

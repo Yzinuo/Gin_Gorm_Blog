@@ -21,12 +21,6 @@ type Result struct{
 	Msg 	string
 }
 
-func (e Result) GetCode() int {
-	return e.Code
-}
-func (e Result) GetMsg() string {
-	return e.Msg
-}
 
 func RegisterErrorCode(code int, msg string) (Result)  {
 	if _,ok := _code[code]; ok {

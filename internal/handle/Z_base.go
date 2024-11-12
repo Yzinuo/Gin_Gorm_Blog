@@ -17,7 +17,7 @@ import (
 // 定义响应结构体
 type Response [T any]struct {
 	Code int         `json:"code"`
-	Msg  string      `json:"msg"`
+	Message  string      `json:"message"` // 前端绑定了这个Message来显示错误信息框
 	Data T 			 `json:"data"`
 }
 
@@ -25,14 +25,14 @@ type Response [T any]struct {
 func ReturnHttpResponse  (c *gin.Context,httpcode int,code int, msg string,data any) {
 	c.JSON(httpcode,Response[any]{
 		Code : code,
-		Msg  : msg,
+		Message  : msg,
 		Data : data,
 	})
 }
 
 // Result + data
 func ReturnResponse  (c *gin.Context,r g.Result,data any){
-	ReturnHttpResponse(c,http.StatusOK,r.GetCode(),r.GetMsg(),data)
+	ReturnHttpResponse(c,http.StatusOK,r.Code,r.Msg,data)
 }
 
 // data 
@@ -43,13 +43,14 @@ func ReturnFail (c *gin.Context,data any) {
 	ReturnResponse(c,g.FailResult,data)
 }
 
+
 //预料中的错误  = 业务错误 + 系统错误  在业务层处理，返回200 http状态码
 //意外的错误  = 触发panic， 在中间件中被捕获，返回500 http状态码
 //data是错误数据（可以是error和string）， error是业务错误
 func ReturnError (c *gin.Context,r g.Result,data any){
 	slog.Info("[FUNC-RETURN-ERROR]] :" + r.Msg)
 
-	var val string
+	var val string = r.Msg
 
 	if data != nil {
 		switch v := data.(type){
@@ -59,13 +60,14 @@ func ReturnError (c *gin.Context,r g.Result,data any){
 		case string:
 			val = v
 		}
+		slog.Error(val)
 	}
 
 	c.AbortWithStatusJSON(
 		http.StatusOK,
 		Response[any]{
 			Code : r.Code,
-			Msg  : r.Msg,
+			Message  : r.Msg,
 			Data : val,
 		},
 	)

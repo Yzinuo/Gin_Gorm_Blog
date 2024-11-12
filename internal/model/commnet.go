@@ -134,7 +134,7 @@ func GetBlogCommentList(db *gorm.DB,page,size, typ ,topic_id int)([]CommentVO,in
 	// 在找到每一个对应的子评论
 	for _,com := range list{
 		replyList := make([]CommentVO, 0)
-		result := db.Where("parent_id = ?",com.ParentId).
+		result := db.Where("parent_id = ?",com.ID).
 					Preload("User").Preload("User.UserInfo").
 					Preload("ReplyUser").Preload("ReplyUser.UserInfo").
 					Order("id desc").Scopes(Paginate(page,size)).Find(&replyList)
@@ -157,7 +157,7 @@ func	GetCommentByid(db *gorm.DB,page,size,id int) (data []Comment, err error){
 	result := db.Model(&Comment{}).Where("parent_id = ?",id).
 				Preload("User").Preload("User.UserInfo").
 				 Order("id DESC").Scopes(Paginate(page,size)).
-				 Find(data)
+				 Find(&data)
 
 	return data,result.Error
 }
