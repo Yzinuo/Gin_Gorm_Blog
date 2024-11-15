@@ -72,12 +72,19 @@ var(
 	// Tag and Category
 	ErrTagHasArt  = RegisterErrorCode(4003, "删除失败，标签下存在文章")
 	ErrCateHasArt = RegisterErrorCode(3003, "删除失败，分类下存在文章")
+	ErrNoTag      = RegisterErrorCode(4004, "没有提供标签")
+	ErrNoCate     = RegisterErrorCode(3004, "没有提供分类")
 
 	// 上传或获取文件
 	ErrFileReceive = RegisterErrorCode(9101, "文件接收失败")
 	ErrFileUpload  = RegisterErrorCode(9100, "文件上传失败")
 
 	// 注册错误
+	ErrSendEmail = RegisterErrorCode(6101, "发送邮件失败")
+	ErrCodeNoexit = RegisterErrorCode(6102, "Code不存在 请重新注册")
+	ErrParseEmailCode = RegisterErrorCode(6103, "解析邮件Code失败 请重试")
+	ErrUserExist = RegisterErrorCode(6104, "该邮箱已经注册 请重新注册")
+
 
 	//菜单资源 错误
 	ErrResourceNotExist    = RegisterErrorCode(6002, "该资源不存在")
@@ -86,7 +93,6 @@ var(
 	ErrMenuNotExist        = RegisterErrorCode(6006, "该菜单不存在")
 	ErrMenuUsedByRole      = RegisterErrorCode(6007, "该菜单正在被角色使用，无法删除")
 	ErrMenuHasChildren     = RegisterErrorCode(6008, "该菜单下存在子菜单，无法删除")
-
 	
 )
 

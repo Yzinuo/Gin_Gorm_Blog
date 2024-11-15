@@ -35,14 +35,14 @@ func TestGetUserAuthInfoById(t *testing.T) {
 	db.Create(&userAuth)
 
 	{
-		val, err := GetUserAuthInfoById(db, userAuth.ID)
+		val, err := GetUserAuthById(db, userAuth.ID)
 		assert.Nil(t, err)
 		assert.Equal(t, "test", val.Username)
 	}
 
 	// 测试不存在的用户
 	{
-		_, err := GetUserAuthInfoById(db, -99)
+		_, err := GetUserAuthById(db, -99)
 		// assert.Nil(t, val)
 		assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
 	}

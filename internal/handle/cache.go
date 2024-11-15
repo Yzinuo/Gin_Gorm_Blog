@@ -6,8 +6,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	model "gin-blog/internal/model"
 	g "gin-blog/internal/global"
+	model "gin-blog/internal/model"
+	"time"
 
 	"github.com/go-redis/redis/v9"
 )
@@ -52,4 +53,15 @@ func DelConfigCache(rdb *redis.Client) error{
 
 func GetConfigCache(rdb *redis.Client) (Cache map[string]string, err error){	
 	return rdb.HGetAll(rdbctx,g.CONFIG).Result()
+}
+
+// email
+func SetMailInfo (rdb *redis.Client,info string,expire time.Duration) error{
+	return rdb.Set(rdbctx,info,true,expire).Err()
+}
+func GetMailInfo (rdb *redis.Client,info string) (bool,error){
+	return rdb.Get(rdbctx,info).Bool()
+}
+func DeleteMailInfo(rdb *redis.Client,info string) error{
+	return rdb.Del(rdbctx,info).Err()
 }

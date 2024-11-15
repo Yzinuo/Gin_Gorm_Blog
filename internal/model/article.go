@@ -248,47 +248,52 @@ func UpdateArticleSoftDlete(db *gorm.DB,ids []int,isDelete bool) (int64,error){
 }
 
 // 新增/编辑文章, 同时根据 分类名称, 标签名称 维护关联表
-func SvaeOrUpdateArticle(db *gorm.DB,article *Article,categoryname string,tagnames []string) error{
+// 为新增/修改的文章，维护tag，category 的关联表
+func SvaeOrUpdateArticle(tx *gorm.DB,article *Article,categoryname string,tagnames []string) error{
 	// 如果没有这个分类，Create
-	category := Category{Name : categoryname}
-	result := db.Model(&Category{}).Where("name",categoryname).FirstOrCreate(&category)
-	if result.Error != nil{
-		return result.Error
-	}
+	return  tx.Transaction(func(db *gorm.DB) error{
+	
+		category := Category{Name : categoryname}
+		result := db.Model(&Category{}).Where("name",categoryname).FirstOrCreate(&category)
+		if result.Error != nil{
+			return result.Error
+		}
+		article.CategoryId =category.ID
 
-// 新增或更新文章
-	if article.ID == 0{
-		result = db.Create(article)
-	}else{
-		result = db.Model(article).Where("id",article.ID).Updates(article)
-	}
-	if result.Error != nil{
-		return result.Error
-	}
-
-	// 更新文章后 文章对应的tag需要更新 维护关联表 
-	// 清空
-	result = db.Delete(&ArticleTag{},"article_id",article.ID)
-	if result.Error != nil{
-		return result.Error
-	}
-
-	// 如果tag表中有没有这个tag，添加
-	var articletags []ArticleTag
-	for _,tagname := range tagnames {
-		newTag := Tag{Name: tagname}
-		result = db.Model(&Tag{}).Where("name",tagname).FirstOrCreate(&newTag)
+	// 新增或更新文章
+		if article.ID == 0{
+			result = db.Create(&article)
+		}else{
+			result = db.Model(&article).Where("id",article.ID).Updates(article)
+		}
 		if result.Error != nil{
 			return result.Error
 		}
 
-		articletags = append(articletags, ArticleTag{
-			ArticleId: article.ID,
-			TagId: newTag.ID,
-		})
-	}
-	result = db.Create(&articletags)
-	return result.Error
+		// 更新文章后 文章对应的tag需要更新 维护关联表 
+		// 清空
+		result = db.Delete(&ArticleTag{},"article_id",article.ID)
+		if result.Error != nil{
+			return result.Error
+		}
+
+		// 如果tag表中有没有这个tag，添加
+		var articletags []ArticleTag
+		for _,tagname := range tagnames {
+			newTag := Tag{Name: tagname}
+			result = db.Model(&Tag{}).Where("name",tagname).FirstOrCreate(&newTag)
+			if result.Error != nil{
+				return result.Error
+			}
+
+			articletags = append(articletags, ArticleTag{
+				ArticleId: article.ID,
+				TagId: newTag.ID,
+			})
+		}
+		result = db.Create(&articletags)
+		return result.Error
+	})
 }
 
 func UpdatearticleTop(db *gorm.DB,id int, Istop bool) error{
@@ -297,7 +302,7 @@ func UpdatearticleTop(db *gorm.DB,id int, Istop bool) error{
 }
 
 
-func ImportArticle(db *gorm.DB, userAuthId int, title, content, img string) error {
+func ImportArticle(db *gorm.DB, userAuthId int, title string, content string, img string ,categoryname string,tangname string) error {
 	article := Article{
 		Title:   title,
 		Content: content,
@@ -306,7 +311,28 @@ func ImportArticle(db *gorm.DB, userAuthId int, title, content, img string) erro
 		Type:    TYPE_ORIGINAL,
 		UserId:  userAuthId,
 	}
+	category := Category{Name : categoryname}
+	result := db.Model(&Category{}).Where("name",categoryname).FirstOrCreate(&category)
+	if result.Error != nil{
+			return result.Error
+		}
+		article.CategoryId =category.ID
+		
+	result = db.Create(&article)		
+	if result.Error!= nil{
+		return result.Error
+	}
 
-	result := db.Create(&article)
+	var articletag ArticleTag
+	tag := Tag{Name: tangname}	
+	result = db.Model(&Tag{}).Where("name",tangname).FirstOrCreate(&tag)
+	if result.Error!= nil{
+		return result.Error
+	}
+
+	articletag.ArticleId = article.ID
+	articletag.TagId = tag.ID
+	result = db.Create(&articletag)
+	
 	return result.Error
 }

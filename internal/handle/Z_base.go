@@ -118,7 +118,7 @@ func CurrentUserAuth(c *gin.Context) (*model.UserAuth,error){
 	// 3
 	if id != nil{
 		db := GetDB(c)
-		userauth,err := model.GetUserAuthInfoById(db,id.(int))
+		userauth,err := model.GetUserAuthById(db,id.(int))
 		
 		if err != nil{
 			return nil,err

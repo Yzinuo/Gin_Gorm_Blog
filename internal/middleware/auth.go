@@ -71,14 +71,14 @@ func JWTAuth() gin.HandlerFunc{
 			return
 		}
 
-		user,err := model.GetUserInfoById(db,claims.UserId)
+		user,err := model.GetUserAuthById(db,claims.UserId)
 		if err != nil {
 			handle.ReturnError(c,g.ErrUserNotExist,nil)
 			return
 		}
 
 		sess := sessions.Default(c)
-		sess.Set(g.CTX_USER_AUTH ,user)
+		sess.Set(g.CTX_USER_AUTH ,claims.UserId)
 		sess.Save()
 
 		c.Set(g.CTX_USER_AUTH,user)

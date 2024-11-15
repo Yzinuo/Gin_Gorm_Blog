@@ -13,7 +13,7 @@ type Model struct{
 
 type OptionVO struct {
 	ID			string		`json:"id"`
-	Name		string 		`json:"name"`
+	Name		string 		`json:"label"`
 }
 
 // 返回一个闭包函数，因为闭包函数能实现延迟调用（能契合查询时的顺序要求），动态生成函数

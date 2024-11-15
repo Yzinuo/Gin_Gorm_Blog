@@ -44,6 +44,7 @@ func GetMessageList(db *gorm.DB,page,size int,keyword string)(List []Message,tot
 	}
 
 	result := db.Count(&total).
+			Where("is_review = true").
 			Order("created_at DESC").
 			Scopes(Paginate(page,size)).
 			Find(&List)

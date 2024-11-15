@@ -70,9 +70,9 @@ PATCH: 用于部分更新资源，通常非幂等。
 ## handler 处理 GET 和 POST 请求中数据的区别
 对于 **GET** 请求，参数通常通过 URL 传递。Gin 提供了 `c.Query` 和 `c.Param` 方法来解析这些参数。
 
-- c.Query：用于解析 URL 中的查询参数（即 ?key=value 部分）。
+- c.Query：用于解析 URL 中的查询参数（即 ?key=value 部分）。 对多个form数据合适
 
-- c.Param：用于解析 URL 路径中的参数（即路由中的占位符部分）。
+- c.Param：用于解析 URL 路径中的参数（即路由中的占位符部分）。 
 
 对于 **POST**请求，参数可以通过多种方式传递，如表单参数、JSON 参数等。Gin 提供了相应的方法来解析这些参数。
 

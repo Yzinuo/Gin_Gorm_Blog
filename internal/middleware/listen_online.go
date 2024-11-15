@@ -17,7 +17,7 @@ import (
 func ListenOnline() gin.HandlerFunc{
 	return func(c *gin.Context) {
 		ctx := context.Background()
-		rdb := c.MustGet("rdb").(*redis.Client)
+		rdb := c.MustGet(g.CTX_RDB).(*redis.Client)
 
 		auth,err := handle.CurrentUserAuth(c)
 		if err != nil {

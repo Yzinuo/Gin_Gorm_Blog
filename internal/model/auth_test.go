@@ -19,7 +19,7 @@ func TestUserAuth(t *testing.T) {
 	}
 	db.Create(&userAuth)
 
-	val,err := GetUserAuthInfoById(db,userAuth.ID)
+	val,err := GetUserAuthById(db,userAuth.ID)
 	assert.Nil(t,err)
 	assert.Equal(t,userAuth.Username,val.Username)
 	assert.Equal(t,userAuth.Password,val.Password)
@@ -111,5 +111,23 @@ func TestAssociateDelete(t *testing.T) {
 		db.Model(&val).Association("Roles").Unscoped().Clear()
 		db.Table("user_auth_role").Where("user_auth_id = ?", user.ID).Find(&userAuthRole)
 		assert.Len(t, userAuthRole, 0)
+	}
+}
+
+
+func TestCreateNewUser(t *testing.T) {
+	db := setup(t)
+
+	user,userinfo,userrole,_ := CreateNewUser(db,"434538202@qq.com","111111")
+
+	{
+		var val UserAuth
+		db.Table("user_auth").Where("id = ?", user.ID).Find(&val)
+		assert.Equal(t, val.Username, "434538202@qq.com")
+		assert.Equal(t, val.UserInfoId, userinfo.ID)
+		var userAuthRole UserAuthRole
+		db.Table("user_auth_role").Where("user_auth_id = ?", user.ID).Find(&userAuthRole)
+		assert.Equal(t, userAuthRole.RoleId, userrole.RoleId)
+
 	}
 }

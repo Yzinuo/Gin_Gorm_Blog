@@ -19,8 +19,8 @@ type AddOrEditeArticleReq struct {
 	Desc 	string  `json:"desc"`
 	Content string  `json:"content" binding:"required"`
 	Img	string  	`json:"img"`
-	Status  int     `json:"status"  binding:"required,min=1,max = 3"`
-	Type 	int 	`json:"type"    binding:"required, min=1,max=3"`	
+	Status  int     `json:"status"  binding:"required,min=1,max=3"`
+	Type 	int 	`json:"type"    binding:"required,min=1,max=3"`	
 	IsTop   bool 	`json:"is_top"`
 	OriginalUrl string `json:"original_url"`
 	
@@ -31,9 +31,10 @@ type AddOrEditeArticleReq struct {
 // 注意是软删除
 type SoftDelArticleReq struct {
 	IDs 	[]int 	`json:"ids" binding:"required"`	
-	IsDel   bool 	`json:"is_del"`
+	IsDelelte   bool 	`json:"is_delete"`
 }
 
+// 如果有多个form数据，需要绑定form bindquery
 type QueryArticle struct {
 	PageQuery
 	Title 	   string `form:"title"`	
@@ -64,6 +65,13 @@ func (*Article)SavaOrUpdate (c *gin.Context) {
 		ReturnError(c,g.ErrRequest,err)
 		return
 	}
+	if req.Tagnames == nil {
+		ReturnError(c,g.ErrNoTag,"标签不能为空")
+	}
+	if req.CategoryName == "" {
+		ReturnError(c,g.ErrNoCate,"Category不能为空")	
+	}
+
 	userauth,_ := CurrentUserAuth(c)
 	db := GetDB(c)
 
@@ -107,7 +115,7 @@ func (*Article) SoftDelArticle(c *gin.Context) {
 		return
 	}
 
-	rows,err := model.UpdateArticleSoftDlete(GetDB(c),delreq.IDs,delreq.IsDel)
+	rows,err := model.UpdateArticleSoftDlete(GetDB(c),delreq.IDs,delreq.IsDelelte)
 	if err != nil {
 		ReturnError(c,g.ErrDbOp,err)
 		return
@@ -120,7 +128,7 @@ func (*Article) SoftDelArticle(c *gin.Context) {
 func (*Article) DeleteArticle(c *gin.Context) {
 	var ids []int
 	
-	if err := c.ShouldBind(&ids); err != nil {
+	if err := c.ShouldBindJSON(&ids); err != nil {
 		ReturnError(c,g.ErrRequest,err)
 		return
 	}
@@ -242,7 +250,7 @@ func  (*Article)Import(c *gin.Context){
 	}
 	
 	defaultImg:= model.GetValueByKey(db,g.CONFIG_ARTICLE_COVER)
-	err = model.ImportArticle(db,auth.ID,title,content,defaultImg)
+	err = model.ImportArticle(db,auth.ID,title,content,defaultImg,"学习","Golang")
 	if err!= nil {
 		ReturnError(c,g.ErrDbOp,err)
 		return

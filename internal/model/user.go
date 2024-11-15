@@ -1,6 +1,8 @@
 package model
 
 import (
+	"errors"
+
 	"gorm.io/gorm"
 )
 
@@ -30,6 +32,10 @@ func GetUserAuthInfoByName(db *gorm.DB,name string) (*UserAuth,error){
 	var userauth UserAuth
 	
 	result := db.Model(&userauth).Where("username LIKE ?",name).First(&userauth)
+	if result.Error != nil && errors.Is(result.Error,gorm.ErrRecordNotFound){
+		return nil,result.Error
+	}
+	
 	return &userauth,result.Error
 }
 
@@ -42,7 +48,7 @@ func GetUserList(db *gorm.DB,login_type int8,page,size int,nickname string,name 
 	}
 
 	result := db.Model(&UserAuth{}).
-				Joins("LEFT JOINS user_info ON user_info.id = user_auth.user_info_id").
+				Joins("LEFT JOIN user_info ON user_info.id = user_auth.user_info_id").
 				Where("user_info.nickname LIKE ?","%"+nickname+"%").
 				Count(&total).
 				Preload("UserInfo").Preload("Roles").
@@ -54,7 +60,7 @@ func GetUserList(db *gorm.DB,login_type int8,page,size int,nickname string,name 
 
 //更新用户的昵称和角色  更新角色先清空关连表，再添加
 func UpdateUserNicknameAndRole(db *gorm.DB, authId int, nickname string, roleIds []int) error{
-	auth ,err:= GetUserAuthInfoById(db,authId)
+	auth ,err:= GetUserAuthById(db,authId)
 	if err != nil {
 		return err
 	}
