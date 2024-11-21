@@ -61,7 +61,7 @@ type Config struct {
 	}
 	Upload struct {
 		// Size      int    // 文件上传的最大值
-		OssType   string // local | qiniu
+		OssType   string // local | qiniu|aliyun
 		Path      string // 本地文件访问路径
 		StorePath string // 本地文件存储路径
 	}
@@ -73,6 +73,13 @@ type Config struct {
 		SecretKey     string // 秘钥SK
 		UseHTTPS      bool   // 是否使用https
 		UseCdnDomains bool   // 上传是否使用 CDN 上传加速
+	}
+	Aliyun struct {
+		Endpoint        string
+		AccessKeyID     string
+		AccessKeySecret string
+		Bucket          string
+		ImgPath         string
 	}
 }
 
