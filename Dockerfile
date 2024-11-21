@@ -1,24 +1,14 @@
-FROM golang:1.21-alpine as BUILDER
-WORKDIR /gvb
+FROM node:18-alpine3.19 AS BUILD
+WORKDIR /app/front
+COPY gin-blog-front/package*.json .
+RUN npm config set registry https://registry.npmmirror.com \
+    && npm install -g pnpm \
+    && pnpm install
+COPY gin-blog-front .
+RUN pnpm install && pnpm build
 
-ENV GO111MODULE=on \
-    GOPROXY=https://goproxy.cn,direct
+WORKDIR /app/admin
+COPY gin-blog-admin .
+RUN pnpm install && pnpm build
 
-COPY go.mod go.mod
-COPY go.sum go.sum
-RUN go mod download
-
-COPY . .
-RUN cd cmd && go build -o server .
-
-FROM alpine:3.19
-ENV WORK_PATH /gvb
-WORKDIR ${WORK_PATH}
-COPY --from=0 ${WORK_PATH}/cmd/server .
-COPY --from=0 ${WORK_PATH}/config.docker.yml .
-COPY --from=0 ${WORK_PATH}/assets/ip2region.xdb ./asserts/ip2region.xdb
-COPY --from=9 ${WORK_PATH}/assets/templates ./asserts/templates
-EXPOSE 8765
-
-ENTRYPOINT ./server -c config.docker.yml
-
+## 阶段２
