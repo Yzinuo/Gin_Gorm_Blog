@@ -72,7 +72,7 @@ services:
       - ./server.crt:/etc/nginx/crt/server.crt
       - ./server.key:/etc/nginx/crt/server.key
     environment:
-      - USER_HTTPS=${USE_HTTPS}
+      - USE_HTTPS=${USE_HTTPS}
       - SERVER_NAME=${SERVER_NAME}
       - BACKEND_HOST=${BACKEND_HOST}
       - SERVER_PORT=${SERVER_PORT}

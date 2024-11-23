@@ -14,7 +14,8 @@ RUN pnpm install && pnpm build
 ## 阶段２ 将静态资源部署到nginx
 FROM nginx:1.24.0-alpine
 
-COPY --from=BUILD /app/front/dist /usr/share/nginx/html/front
+RUN apk add --no-cache bash
+COPY --from=BUILD /app/front/dist /usr/share/nginx/html
 COPY --from=BUILD /app/admin/dist /usr/share/nginx/html/admin
 
 # nginx 配置文件拷贝在容器中

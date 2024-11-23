@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # 将模板 conf 配置文件注入对应环境变量, 生成到指定文件夹
 set -eu 

@@ -9,7 +9,7 @@ export default defineConfig((configEnv) => {
   const env = loadEnv(configEnv.mode, process.cwd())
 
   return {
-    base: env.VITE_PUBLIC_PATH || '/',
+    base: env.VITE_PUBLIC_PATH || '/admin/',
     resolve: {
       alias: {
         '@': path.resolve(process.cwd(), 'src'),
