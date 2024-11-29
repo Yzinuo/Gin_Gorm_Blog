@@ -126,6 +126,7 @@ func (*BlogInfo) UpdateAbout (c *gin.Context){
 		ReturnError(c,g.ErrDbOp,err)
 		return
 	}
+	ReturnSuccess(c,nil)
 }
 
 // 用户登录 rdb记录信息

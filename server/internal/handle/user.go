@@ -24,8 +24,8 @@ type UpdateCurrentUserReq struct {
 }
 
 type UpdateCurrentPasswordReq struct {
-	NewPassword string `json:"new_password" binding:"required,min = 4,max =20"`
-	OldPassword string `json:"old_password" binding:"required,min = 4,max =20"`
+	NewPassword string `json:"new_password" binding:"required,min=4,max=20"`
+	OldPassword string `json:"old_password" binding:"required,min=4,max=20"`
 }
 
 type UpdateUserReq struct {

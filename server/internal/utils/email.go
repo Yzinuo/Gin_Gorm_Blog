@@ -78,7 +78,7 @@ func ParseEmailVerificationInfo(info string) (string,string,error){
 func GetEmailVerifyURL(info string) string{
 	baseurl := g.GetConfig().Server.Port
 	if baseurl[0] ==':'{
-		baseurl = fmt.Sprintf("localhost%s",baseurl)
+		baseurl = "https://zinuocode.top"
 	}
 
 	return fmt.Sprintf("%s/api/email/verify?info=%s",baseurl,info)  // form数据
@@ -127,7 +127,7 @@ func SendEmail(email string,data *EmailData) error{
 	// 解析模板
 	template,err := ParseTemplateDir("../assets/templates")
 	if err != nil {
-		return errors.New("解析模板失败")
+		return errors.New("解析模板失败"+err.Error())
 	}
 	slog.Info("解析模板成功\n")
 
@@ -136,7 +136,6 @@ func SendEmail(email string,data *EmailData) error{
 	template.ExecuteTemplate(&body,"email-verify.tpl",&data) // 把html数据存储在body中， 第二个参数是模板名称， 第三个参数是模板数据（把模板中的占位符换成data数据）
 	//为了确保html文件在各个邮件客户端都能正常显示，把html转换成内联模式
     htmlString := body.String()
-	slog.Info(htmlString)
 	prem,_ := premailer.NewPremailerFromString(htmlString,nil)
 	htmlline,_ := prem.Transform()
 	m :=gomail.NewMessage()   // 使用gomail库发送邮件
