@@ -68,7 +68,7 @@ func (*Front) GetHomeInfo (c *gin.Context){
 		ReturnError(c,g.ErrDbOp,err)
 		return
 	}
-
+	rdb.Incr(rdbctx,g.VIEW_COUNT)
 	data.ViewCount,_ = rdb.Get(rdbctx,g.VIEW_COUNT).Int64()
 	
 	ReturnSuccess(c,data)
@@ -333,6 +333,7 @@ func (*Front) GetArticleInfo(c *gin.Context){
 	rdb.ZIncrBy(rdbctx,g.ARTICLE_VIEW_COUNT,1,strconv.Itoa(id))
 	
 	// 获取文章的点赞量，访问量
+	article.ViewCount = int64(rdb.ZScore(rdbctx,g.ARTICLE_VIEW_COUNT,strconv.Itoa(id)).Val())
 	article.LikeCount = int64(rdb.ZScore(rdbctx,g.ARTICLE_LIKE_COUNT,strconv.Itoa(id)).Val())
 
 	likeCount, _ := strconv.Atoi(rdb.HGet(rdbctx, g.ARTICLE_LIKE_COUNT, strconv.Itoa(id)).Val())

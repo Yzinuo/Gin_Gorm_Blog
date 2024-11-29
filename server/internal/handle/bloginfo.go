@@ -151,7 +151,6 @@ func (*BlogInfo) Report(c *gin.Context){
 			rdb.HIncrBy(ctx,g.VISITOR_AREA,"未知",1)
 		}
 		// 记录一下为记录的用户
-		rdb.Incr(ctx,g.VIEW_COUNT)
 		rdb.SAdd(ctx,g.KEY_UNIQUE_VISITOR_SET,uuid)
 	}
 
