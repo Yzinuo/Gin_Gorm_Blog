@@ -41,6 +41,7 @@ func(*BlogInfo) GetConfigMap(c *gin.Context){
 	if len(config) > 0 {
 		slog.Debug("get config from redis cache")
 		ReturnSuccess(c,config)
+		return
 	}
 
 	config,err = model.GetConfigMap(db)
