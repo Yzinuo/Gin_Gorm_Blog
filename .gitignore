@@ -1,0 +1,39 @@
+# Node.js - npm 依赖和构建文件
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 包管理器锁文件（可根据需要保留）
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# npm 缓存和本地包
+.npm
+.npmrc
+.pnpm-store/
+
+# 构建输出
+dist/
+build/
+out/
+.next/
+.nuxt/
+
+# 开发工具配置
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE 文件
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 操作系统文件
+.DS_Store
+Thumbs.db

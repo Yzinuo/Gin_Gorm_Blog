@@ -19,8 +19,8 @@ export const useAppStore = defineStore('app', {
       user_count: 0,
     },
     blog_config: {
-      website_name: '子诺的个人博客',
-      website_author: '子诺',
+      website_name: 'Zane的个人博客',
+      website_author: 'Zane',
       website_intro: '处女作',
       website_avatar: '',
     },

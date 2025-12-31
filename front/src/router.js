@@ -9,7 +9,7 @@ const basicRoutes = [
     path: '/',
     component: () => import('@/views/home/index.vue'),
     meta: {
-      title: '子诺',
+      title: 'Zane',
     },
   },
   {
