@@ -133,7 +133,7 @@ INSERT INTO `config` VALUES (1, '2023-12-27 22:40:22.813', '2023-12-27 23:01:35.
 INSERT INTO `config` VALUES (2, '2023-12-27 22:40:22.813', '2023-12-27 23:01:35.033', '', 'website_name', 'Zane个人博客', '网站名称');
 INSERT INTO `config` VALUES (3, '2023-12-27 22:40:22.813', '2023-12-27 23:01:35.027', '', 'website_author', 'Zane', '网站作者');
 INSERT INTO `config` VALUES (4, '2023-12-27 22:40:22.813', '2023-12-27 23:01:35.023', '', 'website_intro', '永远强过昨的的自己', '网站介绍');
-INSERT INTO `config` VALUES (5, '2023-12-27 22:40:22.813', '2023-12-27 23:01:35.038', '', 'website_notice', '我的处女作,比较简陋,just for fun', '网站公告');
+INSERT INTO `config` VALUES (5, '2023-12-27 22:40:22.813', '2023-12-27 23:01:35.038', '', 'website_notice', 'just for fun', '网站公告');
 INSERT INTO `config` VALUES (6, '2023-12-27 22:40:22.813', '2023-12-27 23:01:35.031', '', 'website_createtime', '2023-12-27 22:40:22', '网站创建日期');
 INSERT INTO `config` VALUES (7, '2023-12-27 22:40:22.813', '2023-12-27 23:01:35.011', '', 'website_record', '粤ICP备2021032312号', '网站备案号');
 INSERT INTO `config` VALUES (8, '2023-12-27 22:40:22.813', '2023-12-27 23:01:35.008', '', 'qq', '123456789', 'QQ');

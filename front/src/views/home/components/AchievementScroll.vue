@@ -58,16 +58,17 @@
 <script setup>
 // 数据保持不变...
 const rowA = [
-  { title: 'SCI Q2 一作论文发表', tag: 'Academic', img: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=600&auto=format' },
-  { title: '蓝桥杯全国三等奖', tag: 'Contest', img: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=600&auto=format' },
-  { title: '湖南省一等奖', tag: 'Contest', img: 'https://images.unsplash.com/photo-1504384308090-c54be3855091?q=80&w=600&auto=format' },
+  { title: 'SCI Q2 一作论文发表', tag: 'Academic', img: 'https://img.heliar.top/file/1767414513796_6aa246b350f30f954a693f1b8f143029.png' },
+  { title: '蓝桥杯全国三等奖', tag: 'Contest', img: 'https://img.heliar.top/file/1767414286247_52a06c29606e55b44aa0d08fe9c55182.jpg' },
+  { title: '湖南省一等奖', tag: 'Contest', img: 'https://img.heliar.top/file/1767414296535_b6aff72e24aaa5816864754f060717ef.jpg' },
+  { title: '字节跳动青训营', tag: 'Project', img: 'https://img.heliar.top/file/1767415028684_c134ee9bee6dcb7a2e43c1d516a1f339.jpg'}
 ];
 
 const rowB = [
-  { title: 'Github 1k Stars', tag: 'Open Source', img: 'https://images.unsplash.com/photo-1618401471353-b98afee0b2eb?q=80&w=600&auto=format' },
-  { title: 'MIT6.824', tag: 'Project', img: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?q=80&w=600&auto=format' },
-  { title: '后端开发项目', tag: 'Project', img: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=600&auto=format' },
-  { title: '英语六级500分', tag: 'Language', img: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?q=80&w=600&auto=format' },
+  { title: 'Github 700 Stars贡献者', tag: 'Open Source', img: 'https://img.heliar.top/file/1767414641143_image.png' },
+  { title: 'MIT6.824', tag: 'Project', img: 'https://img.heliar.top/file/1767414443640_image.png' },
+  { title: '后端项目：Zanecode', tag: 'Project', img: 'https://img.heliar.top/file/1767414735473_生成编程卡皮巴拉图标.png' },
+  { title: '英语六级近500分', tag: 'Language', img: 'https://img.heliar.top/file/1767414879705_069b660cf57d140e7fff2291caa91667.jpg' },
 ];
 </script>
 
