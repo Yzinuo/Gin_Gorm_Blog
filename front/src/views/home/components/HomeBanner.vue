@@ -7,13 +7,10 @@
     <!-- 背景层 -->
     <div class="banner-bg"></div>
 
-    <!-- 
-      3D 内容层 (包含 Gopher 轨道) 
-      注意：这里保留 global 视差，但 OrbitingCircles 放底层
-    -->
+    <!-- 3D 内容层 -->
     <div class="banner-content" :style="globalContentStyle">
       
-      <!-- Gopher 轨道层 (在文字后面) -->
+      <!-- Gopher 轨道层 -->
       <div class="orbit-layer">
         <OrbitingCircles
           :items="innerIcons"
@@ -23,7 +20,7 @@
           :reverse="true"
         >
           <template #default="{ item }">
-            <div class="icon-wrapper glass">
+            <div class="icon-wrapper glass-icon">
               <img :src="item.icon" alt="" />
             </div>
           </template>
@@ -36,34 +33,38 @@
           :icon-size="120"
         >
           <template #default="{ item }">
-             <div class="icon-wrapper glass">
+             <div class="icon-wrapper glass-icon">
                <img :src="item.icon" alt="" />
              </div>
           </template>
         </OrbitingCircles>
       </div>
 
-      <!-- 
-        === 核心修改：使用 ThreeDCard 包裹文字 === 
-        Z轴前置，确保可以交互
-      -->
+      <!-- 文字层 -->
       <div class="text-card-layer">
         <ThreeDCard>
-          <ThreeDItem translateZ="60">
+          <ThreeDItem translateZ="80" class="floating-item">
             <div class="title-wrapper">
-              <Transition name="fade-slide" mode="out-in">
-                <h1 :key="currentText" class="cute-title">
+              <!-- 
+                 注意：这里去掉了 mode="out-in" 
+                 配合下方的 Grid 布局实现无缝重叠切换 
+              -->
+              <Transition name="fade-blur">
+                <h1 :key="currentText" class="dreamy-title">
                   {{ currentText }}
                 </h1>
               </Transition>
             </div>
           </ThreeDItem>
 
-          <ThreeDItem translateZ="40" class="mt-4">
-             <div class="subtitle">
-               {{ typer?.output || 'Full Stack Developer' }} <span class="cursor">|</span>
-             </div>
-          </ThreeDItem>
+          <ThreeDItem translateZ="50" class="mt-6">
+          <div class="subtitle-glass">
+      <span class="text-content">
+     
+      {{ (typer?.output || '日日自新，步步强于昨日') }}
+    </span>
+  </div>
+</ThreeDItem>
         </ThreeDCard>
       </div>
 
@@ -82,28 +83,26 @@ import OrbitingCircles from './OrbitingCircles.vue';
 import ThreeDCard from './ThreeDCard.vue';
 import ThreeDItem from './ThreeDItem.vue';
 
-// --- Props ---
 const props = defineProps({
-  blogConfig: { type: Object, default: () => ({ website_name: 'SamuelQZQ' }) },
+  blogConfig: { type: Object, default: () => ({ website_name: 'Zane' }) },
   typer: { type: Object, default: () => ({ output: '' }) }
 });
 const emit = defineEmits(['scroll-down']);
 
-// --- 图标数据 (使用上一轮优化的 CDN 链接) ---
+// 图标数据
 const innerIcons = [
   { icon: 'https://go.dev/images/gophers/machine-colorized.svg' },
   { icon: 'https://go.dev/images/gophers/biplane.svg' },
   { icon: 'https://go.dev/images/gophers/motorcycle.svg' },
 ];
-
 const outerIcons = [
-  { icon: '/images/docker-original.svg' },   // 正确路径
-  { icon: '/images/git-original.svg' },      // 正确路径
-  { icon: '/images/go-original-wordmark.svg' } // 正确路径
+  { icon: '/images/docker-original.svg' },
+  { icon: '/images/git-original.svg' },
+  { icon: '/images/go-original-wordmark.svg' }
 ];
 
-// --- 文字轮播逻辑 ---
-const textList = [props.blogConfig.website_name || 'SamuelQZQ', 'Developer', 'Dreamer', 'Creator'];
+// 文字轮播
+const textList = [props.blogConfig.website_name || 'Zane', 'Developer', 'Dreamer', 'Creator'];
 const currentText = ref(textList[0]);
 let textInterval = null;
 
@@ -112,21 +111,19 @@ onMounted(() => {
   textInterval = setInterval(() => {
     idx = (idx + 1) % textList.length;
     currentText.value = textList[idx];
-  }, 3000); // 每3秒切换
+  }, 3500); 
 });
 
 onUnmounted(() => {
   if (textInterval) clearInterval(textInterval);
 });
 
-// --- 全局 Banner 视差 (保留给 Orbit 使用) ---
+// 全局视差
 const containerRef = ref(null);
 const mouseX = ref(0);
 const mouseY = ref(0);
-const isHovering = ref(false);
 
 const handleGlobalMove = (e) => {
-  // 只做轻微的背景移动，把强烈的 3D 交互留给 ThreeDCard
   const w = window.innerWidth;
   const h = window.innerHeight;
   mouseX.value = (e.clientX / w) * 2 - 1;
@@ -139,10 +136,9 @@ const handleGlobalLeave = () => {
 };
 
 const globalContentStyle = computed(() => {
-  // 这里只对整个容器做非常轻微的倾斜，避免和 ThreeDCard 冲突
   return {
     transform: `perspective(1000px) rotateX(${-mouseY.value * 2}deg) rotateY(${mouseX.value * 2}deg)`,
-    transition: 'transform 0.5s ease-out'
+    transition: 'transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1)'
   };
 });
 
@@ -153,28 +149,24 @@ const scrollDown = () => {
 </script>
 
 <style lang="scss" scoped>
-/* 引入可爱的 Google 字体 */
 @import url('https://fonts.googleapis.com/css2?family=Titan+One&display=swap');
-
-$text-color: #ffffff;
 
 .banner-container {
   position: relative;
-
   height: 100vh;
   width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
   overflow: hidden;
-  background-color: #000;
+  background-color: #1a1b26;
 }
 
 .banner-bg {
   position: absolute;
   inset: 0;
   z-index: 0;
-  background-image: url('https://img.heliar.top/file/1767183149047_网站背景.jpg'); 
+  background-image: url('https://img.heliar.top/file/1767411799555_wallhaven-wej9vp_2560x1440.png'); 
   background-size: cover;
   background-position: center;
   pointer-events: none;
@@ -182,7 +174,12 @@ $text-color: #ffffff;
     content: '';
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.4); 
+    background: linear-gradient(
+      to bottom, 
+      rgba(20, 30, 60, 0.2) 0%, 
+      rgba(10, 15, 40, 0.5) 100%
+    );
+    backdrop-filter: blur(1px);
   }
 }
 
@@ -202,107 +199,133 @@ $text-color: #ffffff;
   inset: 0;
   z-index: 10;
   transform: translateZ(0px);
-  pointer-events: none; /* 让鼠标穿透去触发中间的卡片 */
+  pointer-events: none;
 }
 
-.icon-wrapper {
+.glass-icon {
   width: 100%; height: 100%;
   display: flex; align-items: center; justify-content: center;
-  img { width: 70%; height: 70%; object-fit: contain; }
-  &.glass {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(2px);
-    border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(3px);
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  img { 
+    width: 65%; height: 65%; object-fit: contain; 
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
   }
 }
 
-/* === 卡片与文字层 === */
 .text-card-layer {
-  z-index: 50; /* 确保在最上层 */
+  z-index: 50;
   transform: translateZ(50px);
 }
 
+/* === 容器优化：Grid 布局 === */
 .title-wrapper {
-  // 固定高度，防止切换文字时抖动
-  height: 120px; 
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  
-  @media (min-width: 1024px) { height: 160px; }
+  height: 140px; 
+  /* 关键：Grid 布局 + 居中 */
+  display: grid;
+  place-items: center;
+  @media (min-width: 1024px) { height: 180px; }
 }
 
-/* === 可爱 3D 字体样式 === */
-.cute-title {
-  font-family: 'Titan One', cursive; /* 圆润的卡通字体 */
-  font-size: 4rem;
-  line-height: 1;
+/* === 标题优化：柔和光效 + 强制重叠 === */
+.dreamy-title {
+  /* 关键：让进入和离开的文字都在同一个 Grid 格子里 */
+  grid-area: 1 / 1;
+  
+  font-family: 'Titan One', cursive;
+  font-size: 4.5rem;
+  line-height: 1.1;
   text-align: center;
+  color: #ffffff;
   
-  /* 颜色方案：参考图片中的蓝/粉/白 */
-  background: linear-gradient(to bottom, #ffffff 0%, #dbeafe 100%);
-  -webkit-background-clip: text;
-  color: transparent; /* 为了让背景渐变显示 */
+  /* 柔和描边 (0.4 透明度) */
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.4);
   
-  /* 核心：描边 + 多重阴影制造 3D 厚度感 */
-  -webkit-text-stroke: 3px #3b82f6; /* 蓝色外边框 */
-  paint-order: stroke fill; /* 确保描边不遮挡内部填充 */
-  
-  /* 这里的阴影是关键：层层叠加模拟厚度 */
-  filter: drop-shadow(0px 4px 0px #2563eb) 
-          drop-shadow(0px 8px 0px #1d4ed8)
-          drop-shadow(0px 12px 10px rgba(0,0,0,0.5));
-          
+  /* 柔和阴影 (去掉了刺眼的高光) */
+  text-shadow: 
+    0 5px 15px rgba(0, 0, 0, 0.25), 
+    0 0 20px rgba(100, 180, 255, 0.3);
+
+  animation: breathe 4s ease-in-out infinite;
+
   @media (min-width: 1024px) {
-    font-size: 6rem;
-    -webkit-text-stroke: 4px #3b82f6;
+    font-size: 7rem;
+    text-shadow: 
+      0 8px 20px rgba(0, 0, 0, 0.25),
+      0 0 30px rgba(100, 180, 255, 0.3);
   }
 }
 
-.subtitle {
+.subtitle-glass {
   font-family: 'Consolas', monospace;
-  font-size: 1.2rem;
-  color: #fff;
-  background: rgba(0,0,0,0.4);
-  padding: 0.5rem 1.2rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(6px);
+  padding: 0.6rem 1.5rem;
   border-radius: 99px;
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(255,255,255,0.2);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s;
+  &:hover {
+    background: rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
 }
 
 .cursor {
-  animation: blink 1s infinite;
-  color: #60a5fa;
+  display: inline-block; width: 2px; height: 1.2em;
+  background-color: #60a5fa; animation: blink 1s step-end infinite;
 }
 
-/* === 切换动画 === */
-.fade-slide-enter-active,
-.fade-slide-leave-active {
-  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+@keyframes breathe {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
 }
 
-.fade-slide-enter-from {
+/* === 关键修复：无缝重叠切换动画 === */
+.fade-blur-enter-active,
+.fade-blur-leave-active {
+  /* 
+     这里千万不要写 opacity: 0; 
+     只定义过渡时间和曲线
+  */
+  transition: all 0.6s ease;
+}
+
+/* 离开状态：变透明 + 放大 + 模糊 */
+.fade-blur-leave-to {
   opacity: 0;
-  transform: translateY(20px) scale(0.8);
+  transform: scale(1.1);
+  filter: blur(10px);
 }
 
-.fade-slide-leave-to {
+/* 进入前状态：透明 + 缩小 + 模糊 */
+.fade-blur-enter-from {
   opacity: 0;
-  transform: translateY(-20px) scale(1.1);
-}
-
-.scroll-down-btn {
-  position: absolute; bottom: 2rem; z-index: 30;
-  color: #fff; font-size: 2rem; cursor: pointer;
-  animation: bounce 2s infinite;
+  transform: scale(0.9);
+  filter: blur(10px);
 }
 
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-@keyframes bounce {
-  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-  40% { transform: translateY(-10px); }
-  60% { transform: translateY(-5px); }
+
+.scroll-down-btn {
+  position: absolute; bottom: 3rem; z-index: 30;
+  color: rgba(255,255,255,0.7); 
+  font-size: 2rem; cursor: pointer;
+  animation: float-btn 2s infinite ease-in-out;
+  transition: color 0.3s;
+  &:hover { color: #fff; }
+}
+
+@keyframes float-btn {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(10px); }
 }
 </style>
