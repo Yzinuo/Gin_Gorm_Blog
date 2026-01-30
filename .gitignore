@@ -37,3 +37,23 @@ out/
 # 操作系统文件
 .DS_Store
 Thumbs.db
+
+# User specific rules
+# Ignore all yaml files
+*.yaml
+*.yml
+
+# Ignore SSL/TLS keys/certs
+*.crt
+*.key
+
+# Ignore .gitignore itself
+.gitignore
+
+# Ignore everything in deploy/start
+deploy/start/*
+
+
+# Exception: Keep docker.yaml (and docker-compose.yml) in deploy/start
+!deploy/start/docker.yaml
+!deploy/start/docker-compose.yml

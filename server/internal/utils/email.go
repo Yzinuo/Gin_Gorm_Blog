@@ -78,7 +78,7 @@ func ParseEmailVerificationInfo(info string) (string,string,error){
 func GetEmailVerifyURL(info string) string{
 	baseurl := g.GetConfig().Server.Port
 	if baseurl[0] ==':'{
-		baseurl = "https://zinuocode.top"
+		baseurl = "https://zanecode.top"
 	}
 
 	return fmt.Sprintf("%s/api/email/verify?info=%s",baseurl,info)  // form数据
@@ -125,7 +125,7 @@ func SendEmail(email string,data *EmailData) error{
 
 	var body bytes.Buffer
 	// 解析模板
-	template,err := ParseTemplateDir("../assets/templates")
+	template,err := ParseTemplateDir("/gvb/assets/templates")
 	if err != nil {
 		return errors.New("解析模板失败"+err.Error())
 	}

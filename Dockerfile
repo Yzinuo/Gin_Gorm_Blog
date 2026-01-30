@@ -3,13 +3,15 @@ WORKDIR /app/front
 COPY front/package*.json .
 RUN npm config set registry https://registry.npmmirror.com \
     && npm install -g pnpm \
-    && pnpm install
+    && CI=true pnpm install
 COPY front .
-RUN pnpm install && pnpm build
+RUN CI=true pnpm build
 
 WORKDIR /app/admin
+COPY admin/package*.json .
+RUN CI=true pnpm install
 COPY admin .
-RUN pnpm install && pnpm build
+RUN CI=true pnpm build
 
 ## 阶段２ 将静态资源部署到nginx
 FROM nginx:1.24.0-alpine

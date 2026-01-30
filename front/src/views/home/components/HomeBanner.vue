@@ -1,11 +1,15 @@
 <template>
-  <div 
+  <div
     class="banner-container"
     @mousemove="handleGlobalMove"
     @mouseleave="handleGlobalLeave"
   >
     <!-- 背景层 -->
-    <div class="banner-bg"></div>
+    <div
+      class="banner-bg"
+      :class="{ loaded: bgImageLoaded }"
+      :style="{ '--bg-image-url': `url('${bgImageUrl}')` }"
+    ></div>
 
     <!-- 3D 内容层 -->
     <div class="banner-content" :style="globalContentStyle">
@@ -82,6 +86,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import OrbitingCircles from './OrbitingCircles.vue';
 import ThreeDCard from './ThreeDCard.vue';
 import ThreeDItem from './ThreeDItem.vue';
+import { optimizeImageWithPreset } from '@/utils/imageOptimizer';
 
 const props = defineProps({
   blogConfig: { type: Object, default: () => ({ website_name: 'Zane' }) },
@@ -91,9 +96,9 @@ const emit = defineEmits(['scroll-down']);
 
 // 图标数据
 const innerIcons = [
-  { icon: 'https://go.dev/images/gophers/machine-colorized.svg' },
-  { icon: 'https://go.dev/images/gophers/biplane.svg' },
-  { icon: 'https://go.dev/images/gophers/motorcycle.svg' },
+  { icon: 'https://gvbresource.oss-cn-hongkong.aliyuncs.com/biplane.svg' },
+  { icon: 'https://gvbresource.oss-cn-hongkong.aliyuncs.com/machine-colorized.svg' },
+  { icon: 'https://gvbresource.oss-cn-hongkong.aliyuncs.com/motorcycle.svg' },
 ];
 const outerIcons = [
   { icon: '/images/docker-original.svg' },
@@ -101,17 +106,29 @@ const outerIcons = [
   { icon: '/images/go-original-wordmark.svg' }
 ];
 
+// 渐进式背景图加载
+const bgImageLoaded = ref(false);
+const originalBgUrl = 'https://img.heliar.top/file/1767411799555_wallhaven-wej9vp_2560x1440.png';
+const bgImageUrl = optimizeImageWithPreset(originalBgUrl, 'banner');
+
 // 文字轮播
 const textList = [props.blogConfig.website_name || 'Zane', 'Developer', 'Dreamer', 'Creator'];
 const currentText = ref(textList[0]);
 let textInterval = null;
 
 onMounted(() => {
+  // 预加载背景图
+  const img = new Image();
+  img.onload = () => {
+    bgImageLoaded.value = true;
+  };
+  img.src = bgImageUrl;
+
   let idx = 0;
   textInterval = setInterval(() => {
     idx = (idx + 1) % textList.length;
     currentText.value = textList[idx];
-  }, 3500); 
+  }, 3500);
 });
 
 onUnmounted(() => {
@@ -166,20 +183,26 @@ const scrollDown = () => {
   position: absolute;
   inset: 0;
   z-index: 0;
-  background-image: url('https://img.heliar.top/file/1767411799555_wallhaven-wej9vp_2560x1440.png'); 
   background-size: cover;
   background-position: center;
   pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.6s ease-in;
+
+  &.loaded {
+    opacity: 1;
+    background-image: var(--bg-image-url);
+  }
+
   &::after {
     content: '';
     position: absolute;
     inset: 0;
     background: linear-gradient(
-      to bottom, 
-      rgba(20, 30, 60, 0.2) 0%, 
+      to bottom,
+      rgba(20, 30, 60, 0.2) 0%,
       rgba(10, 15, 40, 0.5) 100%
     );
-    backdrop-filter: blur(1px);
   }
 }
 
