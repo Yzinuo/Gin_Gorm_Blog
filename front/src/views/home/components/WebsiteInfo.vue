@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 
 import dayjs from 'dayjs'
@@ -9,7 +9,7 @@ import { useAppStore } from '@/store'
 const { blogConfig, viewCount } = storeToRefs(useAppStore())
 
 // 每秒刷新时间
-const runTime = ref('')
+const runTime = ref('加载中...')
 
 const formatRuntime = (seconds) => {
   if (!Number.isFinite(seconds) || seconds < 0) {
@@ -43,6 +43,15 @@ const getRuntimeSeconds = () => {
 const refreshRuntime = () => {
   runTime.value = formatRuntime(getRuntimeSeconds())
 }
+
+// 数据到达时立即刷新，避免出现“加载慢一拍”
+watch(
+  () => blogConfig.value,
+  () => {
+    refreshRuntime()
+  },
+  { immediate: true }
+)
 
 // 每 30 秒刷新当前时间
 const timer = setInterval(refreshRuntime, 30 * 1000)
