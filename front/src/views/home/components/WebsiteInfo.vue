@@ -3,25 +3,52 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 
 import dayjs from 'dayjs'
-import duration from 'dayjs/plugin/duration'
 
 import { useAppStore } from '@/store'
 
-dayjs.extend(duration)
 const { blogConfig, viewCount } = storeToRefs(useAppStore())
 
 // 每秒刷新时间
 const runTime = ref('')
 
-// 每秒刷新当前时间
-const timer = setInterval(() => {
-  const createTime = dayjs(blogConfig.value.website_createtime)
-  runTime.value = dayjs.duration(dayjs().diff(createTime)).format('D 天 H 时 m 分')
-}, 30 * 1000)
+const formatRuntime = (seconds) => {
+  if (!Number.isFinite(seconds) || seconds < 0) {
+    return '0 天 0 时 0 分'
+  }
+  const days = Math.floor(seconds / 86400)
+  const hours = Math.floor((seconds % 86400) / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  return `${days} 天 ${hours} 时 ${minutes} 分`
+}
+
+const getRuntimeSeconds = () => {
+  const config = blogConfig.value || {}
+  if (config.website_createtime_unix) {
+    const unix = Number.parseInt(config.website_createtime_unix, 10)
+    if (Number.isFinite(unix)) {
+      return Math.max(0, Math.floor((Date.now() - unix * 1000) / 1000))
+    }
+  }
+
+  const createtime = config.website_createtime_rfc3339 || config.website_createtime
+  if (createtime) {
+    const createTime = dayjs(createtime)
+    if (createTime.isValid()) {
+      return Math.max(0, dayjs().diff(createTime, 'second'))
+    }
+  }
+  return 0
+}
+
+const refreshRuntime = () => {
+  runTime.value = formatRuntime(getRuntimeSeconds())
+}
+
+// 每 30 秒刷新当前时间
+const timer = setInterval(refreshRuntime, 30 * 1000)
 
 onMounted(() => {
-  const createTime = dayjs(blogConfig.value.website_createtime)
-  runTime.value = dayjs.duration(dayjs().diff(createTime)).format('D 天 H 时 m 分')
+  refreshRuntime()
 })
 
 onUnmounted(() => {

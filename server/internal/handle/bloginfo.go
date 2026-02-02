@@ -6,7 +6,9 @@ import (
 	"gin-blog/internal/model"
 	utils "gin-blog/internal/utils"
 	"log/slog"
+	"strconv"
 	"strings"
+	"time"
 
 	g "gin-blog/internal/global"
 
@@ -40,6 +42,7 @@ func(*BlogInfo) GetConfigMap(c *gin.Context){
 
 	if len(config) > 0 {
 		slog.Debug("get config from redis cache")
+		normalizeWebsiteRuntime(config)
 		ReturnSuccess(c,config)
 		return
 	}
@@ -55,6 +58,7 @@ func(*BlogInfo) GetConfigMap(c *gin.Context){
 		return
 	}
 
+	normalizeWebsiteRuntime(config)
 	ReturnSuccess(c,config)
 }
 
@@ -128,6 +132,75 @@ func (*BlogInfo) UpdateAbout (c *gin.Context){
 		return
 	}
 	ReturnSuccess(c,nil)
+}
+
+func normalizeWebsiteRuntime(config map[string]string) {
+	const key = "website_createtime"
+	value := strings.TrimSpace(config[key])
+	if value == "" {
+		return
+	}
+
+	createTime, ok := parseFlexibleTime(value)
+	if !ok {
+		return
+	}
+
+	now := time.Now()
+	if createTime.After(now) {
+		config["website_runtime_seconds"] = "0"
+		config["website_runtime_days"] = "0"
+	} else {
+		seconds := int64(now.Sub(createTime).Seconds())
+		config["website_runtime_seconds"] = strconv.FormatInt(seconds, 10)
+		config["website_runtime_days"] = strconv.FormatInt(seconds/86400, 10)
+	}
+
+	config["website_createtime_unix"] = strconv.FormatInt(createTime.Unix(), 10)
+	config["website_createtime_rfc3339"] = createTime.Format(time.RFC3339)
+}
+
+func parseFlexibleTime(value string) (time.Time, bool) {
+	if value == "" {
+		return time.Time{}, false
+	}
+
+	if isDigits(value) {
+		if ts, err := strconv.ParseInt(value, 10, 64); err == nil {
+			switch {
+			case len(value) >= 13:
+				return time.UnixMilli(ts), true
+			case len(value) >= 10:
+				return time.Unix(ts, 0), true
+			}
+		}
+	}
+
+	layouts := []string{
+		time.RFC3339,
+		"2006-01-02 15:04:05",
+		"2006-01-02",
+		"2006/01/02 15:04:05",
+		"2006/01/02",
+	}
+
+	for _, layout := range layouts {
+		if t, err := time.ParseInLocation(layout, value, time.Local); err == nil {
+			return t, true
+		}
+	}
+
+	return time.Time{}, false
+}
+
+func isDigits(value string) bool {
+	for i := 0; i < len(value); i++ {
+		c := value[i]
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return len(value) > 0
 }
 
 // 用户登录 rdb记录信息
