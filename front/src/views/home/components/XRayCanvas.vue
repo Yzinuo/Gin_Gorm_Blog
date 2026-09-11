@@ -1,0 +1,521 @@
+<template>
+  <div
+    ref="containerRef"
+    class="xray-canvas-container"
+    @mousemove="handleMouseMove"
+    @mouseenter="handleMouseEnter"
+    @mouseleave="handleMouseLeave"
+  >
+    <canvas ref="canvasRef" class="xray-canvas"></canvas>
+    
+    <!-- 加载中指示器 (初始资源较大时优雅过渡) -->
+    <Transition name="fade">
+      <div v-if="!isReady" class="loading-overlay">
+        <div class="cyber-spinner"></div>
+        <span class="loading-text">SYSTEM INITIALIZING...</span>
+      </div>
+    </Transition>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted, onUnmounted } from 'vue';
+
+const containerRef = ref(null);
+const canvasRef = ref(null);
+const isReady = ref(false);
+
+// 配置参数
+const CONFIG = {
+  imgBeforeUrl: '/images/Before.png',
+  imgAfterUrl: '/images/After.png',
+  imgWidth: 1672,
+  imgHeight: 941,
+  baseRadius: 180,       // 基础透视半径 (px)
+  maxStretchRadius: 260, // 运动时最大拉伸半径
+  lerpFactor: 0.1,       // 惯性平滑度 (越小越柔和流体感越强)
+  rimWidthRatio: 0.055,  // 边缘光圈宽度比例
+  rimColor: [1.0, 0.18, 0.18], // 霓虹激光红
+  rimGlowIntensity: 1.8,
+};
+
+let gl = null;
+let program = null;
+let textureBefore = null;
+let textureAfter = null;
+let animationFrameId = null;
+
+// 物理状态追踪
+const state = {
+  targetX: 0,
+  targetY: 0,
+  currentX: 0,
+  currentY: 0,
+  prevX: 0,
+  prevY: 0,
+  velocityX: 0,
+  velocityY: 0,
+  speed: 0,
+  currentRadius: CONFIG.baseRadius,
+  targetRadius: CONFIG.baseRadius,
+  hoverFactor: 0.0,   // 0: 完全淡出, 1: 完全显现
+  targetHover: 0.0,
+  hasInitialMoved: false,
+  startTime: performance.now(),
+  lastFrameTime: performance.now(),
+};
+
+// 顶点着色器
+const VS_SOURCE = `
+attribute vec2 a_position;
+varying vec2 v_uv;
+
+void main() {
+  v_uv = (a_position + 1.0) * 0.5;
+  // 翻转 Y 轴匹配 WebGL 纹理坐标
+  v_uv.y = 1.0 - v_uv.y;
+  gl_Position = vec4(a_position, 0.0, 1.0);
+}
+`;
+
+// 片段着色器 (核心液态 X-Ray 渲染器)
+const FS_SOURCE = `
+precision highp float;
+
+varying vec2 v_uv;
+
+uniform sampler2D u_texBefore;
+uniform sampler2D u_texAfter;
+uniform vec2 u_resolution;
+uniform vec2 u_imageResolution;
+uniform vec2 u_mouse;       // 归一化屏幕坐标 [0, 1]
+uniform vec2 u_velocity;    // 移动速度矢量
+uniform float u_radius;     // 像素半径
+uniform float u_time;
+uniform float u_hover;      // 显隐过渡因子 [0, 1]
+
+// 计算保持 Cover 比例居中的 UV 坐标
+vec2 getCoverUV(vec2 uv, vec2 screenRes, vec2 imgRes) {
+  float screenRatio = screenRes.x / screenRes.y;
+  float imgRatio = imgRes.x / imgRes.y;
+  
+  vec2 newUV = uv;
+  if (screenRatio > imgRatio) {
+    // 屏幕更宽，按宽度撑满，Y方向上下居中裁切
+    float scale = screenRatio / imgRatio;
+    newUV.y = (uv.y - 0.5) * scale + 0.5;
+  } else {
+    // 屏幕更高，按高度撑满，X方向左右居中裁切
+    float scale = imgRatio / screenRatio;
+    newUV.x = (uv.x - 0.5) * scale + 0.5;
+  }
+  return newUV;
+}
+
+void main() {
+  vec2 uv = getCoverUV(v_uv, u_resolution, u_imageResolution);
+
+  // 如果超出图片范围，渲染黑边底色
+  if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
+    gl_FragColor = vec4(0.05, 0.05, 0.08, 1.0);
+    return;
+  }
+
+  // 像素空间坐标计算
+  vec2 pixelPos = v_uv * u_resolution;
+  vec2 mousePixel = u_mouse * u_resolution;
+  vec2 diff = pixelPos - mousePixel;
+
+  // 速度拉伸投影 (向速度反方向形变，形成类似流体水滴的拖尾感)
+  float speed = length(u_velocity);
+  vec2 dir = speed > 0.001 ? normalize(u_velocity) : vec2(0.0);
+  
+  // 沿着速度方向进行轴向拉伸
+  float distAlong = dot(diff, dir);
+  vec2 distPerp = diff - dir * distAlong;
+  
+  // 拉伸系数：当高速移动时，顺向伸长
+  float stretch = clamp(speed * 0.04, 0.0, 0.7);
+  vec2 stretchedDiff = distPerp + dir * (distAlong / (1.0 + stretch));
+  float rawDist = length(stretchedDiff);
+
+  // 极坐标有机流体波纹 (Wobble & Noise)
+  float angle = atan(diff.y, diff.x);
+  float wave = sin(angle * 5.0 + u_time * 3.5) * 0.045 + 
+               cos(angle * 3.0 - u_time * 2.0) * 0.035;
+  
+  // 有效半径引入呼吸波纹
+  float effectiveRadius = u_radius * (1.0 + wave) * u_hover;
+
+  // 探针边缘柔和羽化遮罩 (Feathered Mask)
+  float softness = u_radius * 0.18 + 10.0;
+  float mask = smoothstep(effectiveRadius + softness, effectiveRadius - softness, rawDist);
+
+  // 边缘霓虹光环 (Neon Rim Glow)
+  // 当距离接近 effectiveRadius 时产生强烈的赛博红光散射
+  float rimDist = abs(rawDist - effectiveRadius);
+  float rimWidth = u_radius * 0.075 + 4.0;
+  float rim = exp(-pow(rimDist / rimWidth, 2.0)) * u_hover;
+
+  // 采样双层纹理
+  vec4 colBefore = texture2D(u_texBefore, uv);
+  vec4 colAfter = texture2D(u_texAfter, uv);
+
+  // X-Ray 探针内部轻微的科技扫描线 (Subtle Cyber HUD Scanline)
+  float scanline = sin(gl_FragCoord.y * 1.5) * 0.035;
+  vec3 xRayColor = colAfter.rgb - vec3(scanline);
+
+  // 双层平滑合成
+  vec3 blended = mix(colBefore.rgb, xRayColor, mask);
+
+  // 叠加边缘高能光环 (Crimson Neon Rim)
+  vec3 rimColor = vec3(1.0, 0.16, 0.16) * rim * 1.9;
+  // 核心高光
+  vec3 rimCore = vec3(1.0, 0.65, 0.4) * pow(rim, 3.5) * 1.6;
+
+  blended += rimColor + rimCore;
+
+  gl_FragColor = vec4(blended, 1.0);
+}
+`;
+
+function createShader(gl, type, source) {
+  const shader = gl.createShader(type);
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    console.error('Shader compile error:', gl.getShaderInfoLog(shader));
+    gl.deleteShader(shader);
+    return null;
+  }
+  return shader;
+}
+
+function initGL() {
+  const canvas = canvasRef.value;
+  if (!canvas) return false;
+
+  gl = canvas.getContext('webgl', {
+    antialias: true,
+    alpha: false,
+    powerPreference: 'high-performance'
+  });
+
+  if (!gl) {
+    console.error('WebGL not supported');
+    return false;
+  }
+
+  const vs = createShader(gl, gl.VERTEX_SHADER, VS_SOURCE);
+  const fs = createShader(gl, gl.FRAGMENT_SHADER, FS_SOURCE);
+  if (!vs || !fs) return false;
+
+  program = gl.createProgram();
+  gl.attachShader(program, vs);
+  gl.attachShader(program, fs);
+  gl.linkProgram(program);
+
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.error('Program link error:', gl.getProgramInfoLog(program));
+    return false;
+  }
+
+  gl.useProgram(program);
+
+  // 全屏四边形顶点数据
+  const positionBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+  gl.bufferData(
+    gl.ARRAY_BUFFER,
+    new Float32Array([
+      -1, -1,
+       1, -1,
+      -1,  1,
+      -1,  1,
+       1, -1,
+       1,  1,
+    ]),
+    gl.STATIC_DRAW
+  );
+
+  const posLoc = gl.getAttribLocation(program, 'a_position');
+  gl.enableVertexAttribArray(posLoc);
+  gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+
+  return true;
+}
+
+function loadTexture(gl, url) {
+  return new Promise((resolve, reject) => {
+    const texture = gl.createTexture();
+    const image = new Image();
+    image.crossOrigin = 'anonymous';
+    image.onload = () => {
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+
+      // 设置滤波
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+      resolve(texture);
+    };
+    image.onerror = (e) => reject(e);
+    image.src = url;
+  });
+}
+
+function resizeCanvas() {
+  const container = containerRef.value;
+  const canvas = canvasRef.value;
+  if (!container || !canvas || !gl) return;
+
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+
+  if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    gl.viewport(0, 0, canvas.width, canvas.height);
+  }
+}
+
+function render() {
+  if (!gl || !program || !isReady.value) {
+    animationFrameId = requestAnimationFrame(render);
+    return;
+  }
+
+  const now = performance.now();
+  const dt = Math.min((now - state.lastFrameTime) / 1000, 0.1);
+  state.lastFrameTime = now;
+  const elapsed = (now - state.startTime) / 1000;
+
+  const canvas = canvasRef.value;
+  const width = canvas.width;
+  const height = canvas.height;
+
+  // 1. 物理位置插值 (Lerp)
+  state.currentX += (state.targetX - state.currentX) * CONFIG.lerpFactor;
+  state.currentY += (state.targetY - state.currentY) * CONFIG.lerpFactor;
+
+  // 2. 速度与形变计算
+  const dx = state.currentX - state.prevX;
+  const dy = state.currentY - state.prevY;
+  state.prevX = state.currentX;
+  state.prevY = state.currentY;
+
+  // 速度矢量做平滑衰减
+  state.velocityX += (dx - state.velocityX) * 0.25;
+  state.velocityY += (dy - state.velocityY) * 0.25;
+  const rawSpeed = Math.sqrt(state.velocityX * state.velocityX + state.velocityY * state.velocityY);
+  state.speed += (rawSpeed - state.speed) * 0.2;
+
+  // 3. 动态探针半径计算 (运动速度越快，光斑适当扩充)
+  const speedExpand = Math.min(state.speed * 3.5, CONFIG.maxStretchRadius - CONFIG.baseRadius);
+  const targetRad = CONFIG.baseRadius + speedExpand;
+  state.currentRadius += (targetRad - state.currentRadius) * 0.15;
+
+  // 4. 显隐渐变因子 (Hover / Exit)
+  state.hoverFactor += (state.targetHover - state.hoverFactor) * 0.08;
+
+  // 5. 闲置微呼吸 (Idle Breathing)
+  let activeRadius = state.currentRadius;
+  if (state.speed < 0.5) {
+    activeRadius += Math.sin(elapsed * 2.2) * 8.0;
+  }
+
+  gl.useProgram(program);
+
+  // 设置 Uniform 变量
+  const uRes = gl.getUniformLocation(program, 'u_resolution');
+  const uImgRes = gl.getUniformLocation(program, 'u_imageResolution');
+  const uMouse = gl.getUniformLocation(program, 'u_mouse');
+  const uVel = gl.getUniformLocation(program, 'u_velocity');
+  const uRad = gl.getUniformLocation(program, 'u_radius');
+  const uTime = gl.getUniformLocation(program, 'u_time');
+  const uHov = gl.getUniformLocation(program, 'u_hover');
+
+  gl.uniform2f(uRes, width, height);
+  gl.uniform2f(uImgRes, CONFIG.imgWidth, CONFIG.imgHeight);
+  // 传入归一化的物理坐标
+  gl.uniform2f(uMouse, state.currentX / width, state.currentY / height);
+  gl.uniform2f(uVel, state.velocityX, state.velocityY);
+  // 半径按 DPR 适配像素
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  gl.uniform1f(uRad, activeRadius * dpr);
+  gl.uniform1f(uTime, elapsed);
+  gl.uniform1f(uHov, state.hoverFactor);
+
+  // 绑定纹理
+  const uTexBeforeLoc = gl.getUniformLocation(program, 'u_texBefore');
+  const uTexAfterLoc = gl.getUniformLocation(program, 'u_texAfter');
+
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, textureBefore);
+  gl.uniform1i(uTexBeforeLoc, 0);
+
+  gl.activeTexture(gl.TEXTURE1);
+  gl.bindTexture(gl.TEXTURE_2D, textureAfter);
+  gl.uniform1i(uTexAfterLoc, 1);
+
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+  animationFrameId = requestAnimationFrame(render);
+}
+
+// 鼠标交互事件
+function handleMouseMove(e) {
+  const container = containerRef.value;
+  if (!container) return;
+
+  const rect = container.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const clientX = e.clientX - rect.left;
+  const clientY = e.clientY - rect.top;
+
+  state.targetX = clientX * dpr;
+  state.targetY = clientY * dpr;
+  state.targetHover = 1.0;
+
+  if (!state.hasInitialMoved) {
+    state.hasInitialMoved = true;
+    state.currentX = state.targetX;
+    state.currentY = state.targetY;
+    state.prevX = state.targetX;
+    state.prevY = state.targetY;
+  }
+}
+
+function handleMouseEnter() {
+  state.targetHover = 1.0;
+}
+
+function handleMouseLeave() {
+  // 鼠标移出时，光圈优雅淡出
+  state.targetHover = 0.0;
+}
+
+let resizeObserver = null;
+
+onMounted(async () => {
+  if (!initGL()) return;
+
+  resizeCanvas();
+
+  // 初始将探针预置在右侧人物肩膀/背部核心区域，呼吸待命
+  const canvas = canvasRef.value;
+  state.targetX = canvas.width * 0.58;
+  state.targetY = canvas.height * 0.46;
+  state.currentX = state.targetX;
+  state.currentY = state.targetY;
+  state.prevX = state.targetX;
+  state.prevY = state.targetY;
+  state.targetHover = 0.85; // 页面加载后默认显露一处 X-Ray 唤起好奇心
+
+  // 监听容器尺寸调整
+  resizeObserver = new ResizeObserver(() => {
+    resizeCanvas();
+  });
+  if (containerRef.value) {
+    resizeObserver.observe(containerRef.value);
+  }
+
+  // 加载双图纹理
+  try {
+    const [tBefore, tAfter] = await Promise.all([
+      loadTexture(gl, CONFIG.imgBeforeUrl),
+      loadTexture(gl, CONFIG.imgAfterUrl),
+    ]);
+    textureBefore = tBefore;
+    textureAfter = tAfter;
+    isReady.value = true;
+  } catch (err) {
+    console.error('Failed to load X-Ray textures:', err);
+  }
+
+  animationFrameId = requestAnimationFrame(render);
+});
+
+onUnmounted(() => {
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId);
+  }
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+  }
+  if (gl) {
+    if (textureBefore) gl.deleteTexture(textureBefore);
+    if (textureAfter) gl.deleteTexture(textureAfter);
+    if (program) gl.deleteProgram(program);
+  }
+});
+</script>
+
+<style scoped>
+.xray-canvas-container {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #0d0e15;
+  cursor: crosshair;
+  z-index: 1;
+}
+
+.xray-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #0d0e15;
+  z-index: 10;
+  gap: 16px;
+}
+
+.cyber-spinner {
+  width: 46px;
+  height: 46px;
+  border: 2px solid rgba(255, 50, 50, 0.2);
+  border-top-color: #ff3333;
+  border-radius: 50%;
+  animation: cyber-spin 0.9s linear infinite;
+  box-shadow: 0 0 15px rgba(255, 50, 50, 0.4);
+}
+
+.loading-text {
+  font-family: monospace;
+  font-size: 0.85rem;
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+@keyframes cyber-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.6s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>
