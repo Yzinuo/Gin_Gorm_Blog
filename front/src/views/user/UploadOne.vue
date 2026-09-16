@@ -51,8 +51,8 @@ async function handleFileChange() {
 
 <template>
   <!-- TODO: 拖拽文件上传 -->
-  <main class="flex items-center justify-center bg-gray-100 font-sans">
-    <label for="dropzone-file" class="mx-auto max-w-[300px] w-full cursor-pointer items-center border-1 border-blue-400 rounded-xl border-dashed bg-white p-2 text-center">
+  <main class="flex items-center justify-center bg-raised font-sans">
+    <label for="dropzone-file" class="mx-auto max-w-[300px] w-full cursor-pointer items-center border-1 border-brand rounded-xl border-dashed bg-surface p-2 text-center">
       <template v-if="previewImg">
         <div class="group relative">
           <img class="lg:h-[160px] lg:w-[160px]" :src="imgUrl" alt="user avatar">
@@ -64,8 +64,8 @@ async function handleFileChange() {
       <template v-else>
         <div class="f-c-c lg:h-[160px] lg:w-[160px]">
           <div class="flex flex-col items-center">
-            <span class="i-mdi:upload text-[58px] text-blue-500" />
-            <span class="text-blue-400"> 点击上传文件</span>
+            <span class="i-mdi:upload text-[58px] text-brand" />
+            <span class="text-brand"> 点击上传文件</span>
           </div>
         </div>
       </template>

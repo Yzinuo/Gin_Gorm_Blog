@@ -57,20 +57,20 @@ function openLogin() {
           <span class="mr-4 inline-block w-16 text-right"> 邮箱 </span>
           <input
             v-model="form.email" required placeholder="请输入邮箱地址"
-            class="block w-full border-0 rounded-md p-2 text-gray-900 shadow-sm outline-none ring-1 ring-gray-300 ring-inset placeholder:text-gray-400 focus:ring-2 focus:ring-emerald"
+            class="block w-full border-0 rounded-md p-2 text-foreground shadow-sm outline-none ring-1 ring-line ring-inset placeholder:text-gray-400 focus:ring-2 focus:ring-brand"
           >
         </div>
         <div class="flex items-center">
           <span class="mr-4 inline-block w-16 text-right"> 密码 </span>
           <input
             v-model="form.password" required type="password" placeholder="请输入密码"
-            class="block w-full border-0 rounded-md p-2 text-gray-900 shadow-sm outline-none ring-1 ring-gray-300 ring-inset placeholder:text-gray-400 focus:ring-2 focus:ring-emerald"
+            class="block w-full border-0 rounded-md p-2 text-foreground shadow-sm outline-none ring-1 ring-line ring-inset placeholder:text-gray-400 focus:ring-2 focus:ring-brand"
           >
         </div>
       </div>
       <div class="my-2 text-center">
         <button
-          class="w-full rounded bg-red py-2 text-white hover:bg-orange"
+          class="w-full rounded bg-brand py-2 text-on-brand hover:bg-brand-hover"
           @click="handleRegister"
         >
           注册

@@ -15,7 +15,7 @@ function share() {
   <div class="flex items-center justify-between">
     <div class="space-x-2">
       <RouterLink v-for="tag of tagList" :key="tag.id" :to="`/tags/${tag.id}?name=${tag.name}`">
-        <span class="border-1px border-blue rounded-xl px-2 py-1 text-xs color-#49b1f5 lg:text-sm">
+        <span class="border-1px border-brand rounded-xl px-2 py-1 text-xs color-brand lg:text-sm">
           {{ tag.name }}
         </span>
       </RouterLink>

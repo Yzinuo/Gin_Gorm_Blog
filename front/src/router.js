@@ -78,7 +78,8 @@ const basicRoutes = [
     path: '/about',
     component: () => import('@/views/about/index.vue'),
     meta: {
-      title: '关于我',
+      title: '自我介绍 · Zane',
+      immersive: true,
     },
   },
   {

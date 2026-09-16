@@ -52,7 +52,7 @@ defineExpose({
     <template v-if="pageTotal < 6">
       <a v-for="i of pageTotal" :key="i" class="mx-1" @click="changeCurrent(i)">
         <!-- 当前选中页数 -->
-        <span v-if="isActive(i)" class="color-#00a1d6 font-bold">
+        <span v-if="isActive(i)" class="color-brand font-bold">
           {{ i }}
         </span>
         <span v-else> {{ i }} </span>
@@ -68,7 +68,7 @@ defineExpose({
 
 <style scoped>
 .active {
-  color: #00a1d6;
+  color: var(--brand);
   font-weight: bold;
 }
 </style>

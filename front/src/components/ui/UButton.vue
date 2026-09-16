@@ -1,6 +1,17 @@
 <script setup lang="ts">
 import { defineProps, withDefaults } from 'vue'
 
+const variants = {
+  default: 'text-foreground bg-raised hover:bg-surface focus:ring-brand',
+  primary: 'text-on-brand bg-brand hover:bg-brand-hover focus:ring-brand',
+  secondary: 'text-foreground bg-raised hover:bg-surface focus:ring-brand',
+  accent: 'text-on-brand bg-brand hover:bg-brand-hover focus:ring-brand',
+  success: 'text-white bg-green-700 hover:bg-green-800 focus:ring-green-500',
+  info: 'text-on-brand bg-brand hover:bg-brand-hover focus:ring-brand',
+  warning: 'text-black bg-amber-400 hover:bg-amber-500 focus:ring-amber-400',
+  error: 'text-white bg-red-700 hover:bg-red-800 focus:ring-red-500',
+}
+
 withDefaults(defineProps<{
   as?: 'button' | 'a'
   type?: 'default' | 'success' | 'info' | 'warning' | 'error' | 'primary' | 'secondary' | 'accent'
@@ -31,9 +42,7 @@ export default {
       :aria-disabled="disabled"
       class="inline-flex cursor-pointer items-center justify-center whitespace-nowrap rounded-md font-sans text-xs font-semibold leading-4 shadow-sm disabled:cursor-not-allowed disabled:opacity-30 focus:outline-none focus:ring-2 focus:ring-offset-2"
       :class="[
-        type === 'default'
-          ? 'text-gray-700 bg-gray-100 hover:bg-gray-200 focus:ring-gray-500'
-          : `text-white bg-${type}-500 hover:bg-${type}-600 focus:ring-${type}-500`,
+        variants[type],
         {
           'px-2 py-1': size === 'sm',
           'px-3 py-2': size === 'md',

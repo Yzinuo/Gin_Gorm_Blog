@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useWindowScroll, watchThrottled } from '@vueuse/core'
 import { Icon } from '@iconify/vue'
@@ -33,7 +33,7 @@ const menuOptions = [
     ],
   },
   { text: '友链', icon: 'mdi:vector-link', path: '/links' },
-  { text: '关于', icon: 'mdi:information-outline', path: '/about' },
+  { text: '自我介绍', icon: 'mdi:information-outline', path: '/about' },
   { text: '留言', icon: 'mdi:forum', path: '/message' },
 ]
 
@@ -44,6 +44,11 @@ const barShow = ref(true)
 // * 节流操作, 效果很好
 const { y } = useWindowScroll()
 const preY = ref(0) // 记录上一次的 y 滚动距离
+watch(() => route.path, () => {
+  barShow.value = true
+  navClass.value = 'nav'
+  preY.value = 0
+})
 watchThrottled(y, () => {
   if (Math.abs(preY.value - y.value) >= 50) { // 小幅度滚动不进行操作
     barShow.value = (y.value < preY.value)
@@ -73,6 +78,7 @@ async function logout() {
       </RouterLink>
       <!-- 右上角图标 -->
       <div class="flex items-center gap-2 text-2xl">
+        <RouterLink to="/about" class="about-nav-link mr-2 text-sm">自我介绍 ↗</RouterLink>
         <button @click="appStore.setSearchFlag(true)">
           <Icon icon="ic:round-search" />
         </button>
@@ -103,7 +109,7 @@ async function logout() {
           </div>
           <div v-for="item of menuOptions" :key="item.text" class="menus-item">
             <!-- 不包含子菜单 -->
-            <RouterLink v-if="!item.subMenu" :to="item.path" class="menu-btn flex items-center">
+            <RouterLink v-if="!item.subMenu" :to="item.path" class="menu-btn flex items-center" :class="{ 'about-nav-link': item.path === '/about' }">
               <Icon :icon="item.icon" class="text-xl" />
               <span class="ml-1"> {{ item.text }} </span>
             </RouterLink>
@@ -163,11 +169,12 @@ async function logout() {
 
 .nav-fixed {
   transition: all 0.8s;
-  color: #000;
-  background: rgba(255, 255, 255, 0.8) !important;
+  color: var(--text-primary);
+  background: rgba(20, 19, 22, 0.94) !important;
+  backdrop-filter: blur(16px);
   box-shadow: 0 5px 6px -5px rgba(133, 133, 133, 0.6);
   & .menu-btn:hover {
-    color: #49b1f5 !important;
+    color: var(--brand) !important;
   }
 }
 
@@ -185,7 +192,7 @@ async function logout() {
     z-index: -1;
     width: 0;
     height: 3px;
-    background-color: #80c8f8;
+    background-color: var(--brand);
     content: "";
     transition: all 0.3s ease-in-out;
   }
@@ -208,7 +215,7 @@ async function logout() {
   width: max-content;
   margin-top: 8px;
   box-shadow: 0 5px 20px -4px rgba(0, 0, 0, 0.5);
-  background-color: #fff;
+  background-color: var(--bg-surface);
   animation: submenu 0.3s 0.1s ease both;
 
   &::before {
@@ -221,13 +228,13 @@ async function logout() {
   }
   a {
     line-height: 2;
-    color: #4c4948 !important;
+    color: var(--text-primary) !important;
     text-shadow: none;
     display: block;
     padding: 6px 14px;
   }
   a:hover {
-    background: #4ab1f4;
+    background: var(--brand-soft);
   }
 }
 
@@ -244,4 +251,8 @@ async function logout() {
     transform: translateY(0);
   }
 }
+</style>
+
+<style scoped>
+.about-nav-link { color: var(--brand); border-bottom: 1px solid var(--brand); padding-bottom: 4px; }
 </style>

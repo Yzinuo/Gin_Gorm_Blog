@@ -78,19 +78,19 @@ function openForget() {
           <span class="mr-4 inline-block w-16 text-right"> 用户名 </span>
           <input
             v-model="form.username" required placeholder="用户名"
-            class="block w-full border-0 rounded-md p-2 text-gray-900 shadow-sm outline-none ring-1 ring-gray-300 ring-inset placeholder:text-gray-400 focus:ring-2 focus:ring-emerald"
+            class="block w-full border-0 rounded-md p-2 text-foreground shadow-sm outline-none ring-1 ring-line ring-inset placeholder:text-gray-400 focus:ring-2 focus:ring-brand"
           >
         </div>
         <div class="flex items-center">
           <span class="mr-4 inline-block w-16 text-right"> 密码 </span>
           <input
             v-model="form.password" type="password" placeholder="密码"
-            class="block w-full border-0 rounded-md p-2 text-gray-900 shadow-sm outline-none ring-1 ring-gray-300 ring-inset placeholder:text-gray-400 focus:ring-2 focus:ring-emerald"
+            class="block w-full border-0 rounded-md p-2 text-foreground shadow-sm outline-none ring-1 ring-line ring-inset placeholder:text-gray-400 focus:ring-2 focus:ring-brand"
           >
         </div>
       </div>
       <div class="my-2 text-center">
-        <button class="w-full rounded-lg bg-blue py-2 text-white hover:bg-light-blue" @click="handleLogin">
+        <button class="w-full rounded-lg bg-brand py-2 text-on-brand hover:bg-brand-hover" @click="handleLogin">
           登录
         </button>
         <div class="mt-4 flex justify-between">

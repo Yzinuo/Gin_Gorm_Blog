@@ -6,7 +6,7 @@ defineProps({
   },
   color: {
     type: String,
-    default: 'green',
+    default: 'var(--brand)',
   },
   thickness: {
     type: Number,
@@ -29,7 +29,7 @@ defineProps({
   >
     <slot name="icon">
       <div
-        class="inline-block h-full w-full animate-spin border-gray-300 rounded-full bg-transparent"
+        class="inline-block h-full w-full animate-spin border-line rounded-full bg-transparent"
         :class="[`border-${thickness}`]"
         :style="{
           'border-right-color': color,

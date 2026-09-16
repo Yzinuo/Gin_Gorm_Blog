@@ -54,7 +54,7 @@ function rewardArticle() {
     <button class="w-[110px] f-c-c rounded-sm py-1.5 text-sm" :class="isLike ? 'bg-red' : 'bg-gray'" @click="likeArticle">
       <span class="i-mdi:thumb-up mr-1" /> 点赞 {{ count }}
     </button>
-    <button class="w-[110px] f-c-c rounded-sm bg-blue py-1.5 text-sm" @click="rewardArticle">
+    <button class="w-[110px] f-c-c rounded-sm bg-brand py-1.5 text-sm text-on-brand" @click="rewardArticle">
       <span class="i-mdi:qrcode mr-1" /> 打赏
     </button>
   </div>

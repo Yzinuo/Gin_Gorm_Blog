@@ -43,10 +43,13 @@ function addToFavorites() {
         </p>
       </RouterLink>
     </div>
+    <RouterLink to="/about" class="inline-flex items-center gap-3 text-sm text-brand">
+      认识我 · 3D 履历 <span aria-hidden="true">↗</span>
+    </RouterLink>
     <!-- 收藏按钮 -->
     <div class="flex justify-center text-center">
       <button
-        class="h-9 w-7/8 f-c-c transform rounded bg-blue-600 text-white transition-200 ease-in-out hover:scale-105 hover:bg-orange-600"
+        class="h-9 w-7/8 f-c-c transform rounded bg-brand text-on-brand transition-200 ease-in-out hover:scale-105 hover:bg-brand-hover"
         @click="addToFavorites"
       >
         <span class="i-mdi:bookmark mr-1 text-xl" /> 加入书签

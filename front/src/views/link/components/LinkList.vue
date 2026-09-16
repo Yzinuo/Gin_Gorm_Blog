@@ -13,8 +13,8 @@ defineProps({
   <div>
     <!-- 标题 -->
     <p class="flex items-center text-xl">
-      <span class="i-mdi:link-variant mr-4 text-blue" />
-      <span class="font-bold color-#344c67"> 友情链接 </span>
+      <span class="i-mdi:link-variant mr-4 text-brand" />
+      <span class="font-bold color-foreground"> 友情链接 </span>
     </p>
     <!-- 链接列表 -->
     <!-- 友链数量不为 0 -->
@@ -54,7 +54,7 @@ defineProps({
 <style lang="scss" scoped>
 .link-wrapper {
   &:hover {
-     box-shadow: 0 2px 20px #49b1f5;
+     box-shadow: 0 2px 20px var(--brand);
   }
   &:hover::before {
     content: "";
@@ -67,7 +67,7 @@ defineProps({
     right: 0;
     bottom: 0;
     left: 0;
-    background: #49b1f5;
+    background: var(--brand-soft);
     border-radius: 8px;
     transition-timing-function: ease-out;
     transition-duration: 0.3s;

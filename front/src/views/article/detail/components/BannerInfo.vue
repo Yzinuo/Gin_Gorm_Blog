@@ -72,7 +72,7 @@ function formatDate(date) {
         </RouterLink>
       </div>
       <RouterLink v-for="tag of article.tags" :key="tag.id" :to="`/tags/${tag.id}?name=${tag.name}`">
-        <span class="border-1px border-blue rounded-xl px-2 py-1 text-sm text-white"> {{ tag.name }} </span>
+        <span class="border-1px border-brand rounded-xl px-2 py-1 text-sm text-white"> {{ tag.name }} </span>
       </RouterLink>
     </div>
     <div>

@@ -18,9 +18,9 @@ const { blogInfo } = storeToRefs(useAppStore())
 
 <style scoped>
 .footer-wrap {
-  background: linear-gradient(-45deg, #ee7752, #ce3e75, #23a6d5, #23d5ab);
-  background-size: 400% 400%;
-  animation: Gradient 8s ease infinite;
+  background: linear-gradient(145deg, var(--bg-stage), #301d24);
+  border-top: 1px solid var(--border-color);
+  color: var(--text-muted);
 }
 
 @keyframes Gradient {

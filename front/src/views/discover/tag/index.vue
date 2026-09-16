@@ -13,14 +13,7 @@ onMounted(() => {
   })
 })
 
-// 随机字体大小
-function randomFontSize() {
-  return Math.floor(Math.random() * 16) + 15
-}
-// 随机颜色 16进制
-function randomColorHex() {
-  return `#${Math.floor(Math.random() * 16777215).toString(16)}`
-}
+const tagColors = ['var(--brand)', 'var(--text-primary)', 'var(--text-muted)']
 </script>
 
 <template>
@@ -30,12 +23,12 @@ function randomColorHex() {
     </h2>
     <div class="mt-6 text-center">
       <RouterLink
-        v-for="t of tagList" :key="t.id" :to="`tags/${t.id}?name=${t.name}`"
+        v-for="(t, index) of tagList" :key="t.id" :to="`tags/${t.id}?name=${t.name}`"
         :style="{
-          'font-size': `${randomFontSize()}px`,
-          'color': `${randomColorHex()}`,
+          'font-size': `${18 + (index % 3) * 4}px`,
+          'color': tagColors[index % tagColors.length],
         }"
-        class="inline-block px-2 leading-11 transition-300 hover:scale-130 !hover:text-lightblue"
+        class="inline-block px-2 leading-11 transition-300 hover:scale-110 !hover:text-brand-hover"
       >
         {{ t.name }}
       </RouterLink>

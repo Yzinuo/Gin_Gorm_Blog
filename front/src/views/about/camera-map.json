@@ -1,0 +1,146 @@
+{
+  "fps": 24,
+  "framesPerNode": 50,
+  "camera": "ResumeCamera",
+  "animation": "CameraAction",
+  "totalFrames": 500,
+  "hero": {
+    "frame": 0,
+    "focus": "focus-0"
+  },
+  "works": {
+    "frame": 500,
+    "focus": "focus-works"
+  },
+  "coordinateSystem": "glTF: Y up, Z toward viewer",
+  "stickers": [
+    {
+      "index": 1,
+      "title": "中科院",
+      "image": "stickers/中科院.png",
+      "object": "sticker_01_ucas",
+      "focus": "focus-1",
+      "frame": 50,
+      "seconds": 2.0833333333333335,
+      "placement": "额头中央",
+      "position": [
+        -0.014999999664723873,
+        0.5149999856948853,
+        0.2652011215686798
+      ],
+      "width": 0.059
+    },
+    {
+      "index": 2,
+      "title": "草花",
+      "image": "stickers/草花.png",
+      "object": "sticker_02_caohua",
+      "focus": "focus-2",
+      "frame": 100,
+      "seconds": 4.166666666666667,
+      "placement": "额头左侧",
+      "position": [
+        -0.08299999684095383,
+        0.4970000088214874,
+        0.2532609701156616
+      ],
+      "width": 0.054
+    },
+    {
+      "index": 3,
+      "title": "指色",
+      "image": "stickers/指色.png",
+      "object": "sticker_03_zhise",
+      "focus": "focus-3",
+      "frame": 150,
+      "seconds": 6.25,
+      "placement": "额头右侧",
+      "position": [
+        0.052000001072883606,
+        0.503000020980835,
+        0.28026148676872253
+      ],
+      "width": 0.054
+    },
+    {
+      "index": 4,
+      "title": "MIT6.824",
+      "image": "stickers/MIT6.824.png",
+      "object": "sticker_04_distributed",
+      "focus": "focus-4",
+      "frame": 200,
+      "seconds": 8.333333333333334,
+      "placement": "画面左上脸颊",
+      "position": [
+        -0.11999999731779099,
+        0.3799999952316284,
+        0.1994432806968689
+      ],
+      "width": 0.048
+    },
+    {
+      "index": 5,
+      "title": "国家励志",
+      "image": "stickers/国家励志.png",
+      "object": "sticker_05_scholarship",
+      "focus": "focus-5",
+      "frame": 250,
+      "seconds": 10.416666666666666,
+      "placement": "画面左下脸颊",
+      "position": [
+        -0.10000000149011612,
+        0.3240000009536743,
+        0.21286457777023315
+      ],
+      "width": 0.051
+    },
+    {
+      "index": 6,
+      "title": "字节青训营",
+      "image": "stickers/字节青训营.png",
+      "object": "sticker_06_bytedance",
+      "focus": "focus-6",
+      "frame": 300,
+      "seconds": 12.5,
+      "placement": "画面右上脸颊",
+      "position": [
+        0.11999999731779099,
+        0.3840000033378601,
+        0.2133055478334427
+      ],
+      "width": 0.05
+    },
+    {
+      "index": 7,
+      "title": "本科SCI",
+      "image": "stickers/本科SCI.png",
+      "object": "sticker_07_research",
+      "focus": "focus-7",
+      "frame": 350,
+      "seconds": 14.583333333333334,
+      "placement": "画面右下脸颊",
+      "position": [
+        0.0989999994635582,
+        0.32600000500679016,
+        0.21526286005973816
+      ],
+      "width": 0.061
+    },
+    {
+      "index": 8,
+      "title": "Github",
+      "image": "stickers/Github.png",
+      "object": "sticker_08_github",
+      "focus": "focus-8",
+      "frame": 400,
+      "seconds": 16.666666666666668,
+      "placement": "下巴中央",
+      "position": [
+        0.0,
+        0.22499999403953552,
+        0.2372967153787613
+      ],
+      "width": 0.071
+    }
+  ]
+}

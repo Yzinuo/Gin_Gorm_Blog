@@ -165,7 +165,7 @@ const isLike = computed(() => id => userStore.commentLikeSet.includes(id))
 <template>
   <div>
     <p class="flex items-center text-xl font-bold">
-      <span class="i-fa:comments mr-3 text-blue" /> 评论
+      <span class="i-fa:comments mr-3 text-brand" /> 评论
     </p>
     <!-- 评论框 -->
     <CommentField
@@ -194,7 +194,7 @@ const isLike = computed(() => id => userStore.commentLikeSet.includes(id))
             <span v-if="!comment.user?.info?.website" class="text-sm">
               {{ comment.user?.info?.nickname }}
             </span>
-            <a v-else :href="comment.user?.info?.website" target="_blank" class="color-[#1abc9c] font-500 transition-300">
+            <a v-else :href="comment.user?.info?.website" target="_blank" class="color-brand font-500 transition-300">
               {{ comment.user?.info?.nickname }}
             </a>
             <!-- TODO: 博主标记 -->
@@ -204,7 +204,7 @@ const isLike = computed(() => id => userStore.commentLikeSet.includes(id))
           </div>
           <!-- 楼层 + 时间 + 点赞 + 回复按钮 -->
           <div class="flex justify-between text-sm">
-            <div class="flex items-center gap-2 py-1 color-#b3b3b3">
+            <div class="flex items-center gap-2 py-1 color-muted">
               <span> {{ commentCount - idx }}楼 </span>
               <span> {{ dayjs(comment.created_at).format('YYYY-MM-DD') }} </span>
               <button
@@ -214,7 +214,7 @@ const isLike = computed(() => id => userStore.commentLikeSet.includes(id))
               />
               <span v-show="comment.like_count"> {{ comment.like_count }} </span>
             </div>
-            <button class="color-#ef2f11" @click="replyComment(idx, comment)">
+            <button class="color-brand" @click="replyComment(idx, comment)">
               回复
             </button>
           </div>
@@ -230,7 +230,7 @@ const isLike = computed(() => id => userStore.commentLikeSet.includes(id))
                 <span v-if="!reply.user?.info?.website" class="text-sm">
                   {{ reply.user?.info.nickname }}
                 </span>
-                <a v-else :href="reply.user?.info?.website" target="_blank" class="color-#1abc9c font-500 transition-300">
+                <a v-else :href="reply.user?.info?.website" target="_blank" class="color-brand font-500 transition-300">
                   {{ reply.user?.info.nickname }}
                 </a>
                 <!-- TODO: 博主标记 -->
@@ -240,7 +240,7 @@ const isLike = computed(() => id => userStore.commentLikeSet.includes(id))
               </div>
               <!-- 时间 + 点赞 + 回复按钮 -->
               <div class="flex justify-between text-sm">
-                <div class="flex items-center gap-2 py-1 color-#b3b3b3">
+                <div class="flex items-center gap-2 py-1 color-muted">
                   <span> {{ dayjs(reply.created_at).format('YYYY-MM-DD') }} </span>
                   <button
                     class="i-mdi:thumb-up hover-bg-red"
@@ -249,7 +249,7 @@ const isLike = computed(() => id => userStore.commentLikeSet.includes(id))
                   />
                   <span v-show="reply.like_count"> {{ reply.like_count }} </span>
                 </div>
-                <button class="color-#ef2f11" @click="replyComment(idx, reply)">
+                <button class="color-brand" @click="replyComment(idx, reply)">
                   回复
                 </button>
               </div>
@@ -274,10 +274,10 @@ const isLike = computed(() => id => userStore.commentLikeSet.includes(id))
           <div
             v-show="comment.reply_count > 3"
             ref="checkRefs"
-            class="mt-4 text-[13px] color-#6d757a"
+            class="mt-4 text-[13px] color-muted"
           >
             共 <b> {{ comment.reply_count }} </b>  条回复
-            <button class="color-#00a1d6" @click="checkReplies(idx, comment)">
+            <button class="color-brand" @click="checkReplies(idx, comment)">
               ，点击查看
             </button>
           </div>

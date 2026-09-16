@@ -1,11 +1,11 @@
 // custom style
-import './styles/index.css'
 import './styles/common.css'
 import './styles/animate.css'
 
 // unocss
 import 'uno.css'
 import '@unocss/reset/tailwind.css'
+import './styles/theme.css'
 
 // vue
 import { createApp } from 'vue'

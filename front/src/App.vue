@@ -1,5 +1,6 @@
 <script setup>
 import { onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 
 import UToast from '@/components/ui/UToast.vue'
 import AppHeader from '@/components/layout/AppHeader.vue'
@@ -10,14 +11,17 @@ import { useAppStore, useUserStore } from '@/store'
 
 const appStore = useAppStore()
 const userStore = useUserStore()
+const currentRoute = useRoute()
 
 const messageRef = ref(null)
 const notifyRef = ref(null)
 
 onMounted(() => {
-  appStore.getPageList()
-  appStore.getBlogInfo()
-  userStore.getUserInfo()
+  Promise.allSettled([
+    appStore.getPageList(),
+    appStore.getBlogInfo(),
+    userStore.getUserInfo(),
+  ])
 
   // 挂载全局提示
   window.$message = messageRef.value
@@ -36,7 +40,7 @@ onMounted(() => {
 
   <div class="h-full w-full flex flex-col">
     <!-- 顶部导航栏 -->
-    <AppHeader />
+    <AppHeader v-if="!currentRoute.meta.immersive" />
     <!-- 中间内容(包含底部信息) -->
     <article class="flex flex-1 flex-col">
       <RouterView v-slot="{ Component, route }">
@@ -45,7 +49,7 @@ onMounted(() => {
     </article>
   </div>
   <!-- 回到顶部 -->
-  <BackToTop />
+  <BackToTop v-if="!currentRoute.meta.immersive" />
   <!-- 全局弹窗 -->
   <GlobalModal />
 </template>

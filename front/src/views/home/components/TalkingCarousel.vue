@@ -7,6 +7,7 @@ onMounted(() => {
   fetch('https://v1.hitokoto.cn?c=i')
     .then(res => res.json())
     .then(data => sentence.value = data.hitokoto)
+    .catch(() => {}) // Keep the local sentence when the quote service is unavailable.
 })
 </script>
 

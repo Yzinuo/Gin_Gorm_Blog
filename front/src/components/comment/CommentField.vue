@@ -79,7 +79,7 @@ defineExpose({ data, setReply })
 </script>
 
 <template>
-  <div v-if="show" class="mt-4 flex border-1 border-color-#90939950 border-rounded-1rem border-solid p-2">
+  <div v-if="show" class="mt-4 flex border-1 border-line border-rounded-1rem border-solid p-2">
     <img class="h-9 w-9" :src="convertImgUrl(userStore.avatar)">
     <div class="my-1 ml-3 w-full">
       <textarea
@@ -94,7 +94,7 @@ defineExpose({ data, setReply })
         <div>
           <span
             v-if="data.nickname"
-            class="the-button mr-4 bg-bluegray hover:bg-bluegray"
+            class="the-button mr-4 bg-raised text-foreground hover:bg-surface"
             @click="setReply(false)"
           >
             取消

@@ -22,11 +22,11 @@ onMounted(async () => {
     <ul class="mt-4 px-5 space-y-2">
       <li
         v-for="c of categoryList" :key="c.id"
-        class="group cursor-pointer duration-300 hover:text-violet"
+        class="group cursor-pointer duration-300 hover:text-brand"
       >
         <RouterLink :to="`categories/${c.id}?name=${c.name}`">
           <div class="flex items-center">
-            <span class="mr-2 inline-block h-4 w-4 rounded-full bg-[#49b1f5] group-hover:bg-[#ff7242]" />
+            <span class="mr-2 inline-block h-4 w-4 rounded-full bg-brand group-hover:bg-brand-hover" />
             <div>
               <span class="text-lg"> {{ c.name }} </span>
               <span class="ml-1 text-sm text-gray"> ({{ c.article_count ?? 0 }}) </span>

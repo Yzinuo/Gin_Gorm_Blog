@@ -20,7 +20,7 @@ const menuOptions = [
   { text: '标签', icon: 'mdi:tag', path: '/tags' },
   { text: '相册', icon: 'mdi:view-gallery', path: '/albums' },
   { text: '友链', icon: 'mdi:vector-link', path: '/links' },
-  { text: '关于', icon: 'mdi:information-outline', path: '/about' },
+  { text: '自我介绍 · 3D 履历', icon: 'mdi:information-outline', path: '/about' },
   { text: '留言', icon: 'mdi:forum', path: '/message' },
 ]
 
@@ -66,7 +66,7 @@ async function logout() {
         </div>
       </div>
       <!-- 分隔线 -->
-      <hr class="my-4 border-2 border-color-#d2ebfd border-dashed">
+      <hr class="my-4 border-2 border-line border-dashed">
       <!-- 菜单 -->
       <div v-for="item of menuOptions" :key="item.text" class="m-2 p-1">
         <RouterLink :to="item.path" class="flex items-center" @click="appStore.setCollapsed(false)">

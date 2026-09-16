@@ -8,7 +8,7 @@ defineProps({
   },
   color: {
     type: String,
-    default: 'green',
+    default: 'var(--brand)',
   },
   thickness: {
     type: Number,

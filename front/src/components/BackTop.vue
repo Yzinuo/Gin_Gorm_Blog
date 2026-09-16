@@ -11,27 +11,22 @@ watchThrottled(y, () => {
 
 const options = [
   {
-    icon: 'bi:moon-stars-fill',
-    fn: () => window.$message?.info('黑夜模式开发中...'),
-  },
-  {
-    icon: 'uiw:setting',
-    fn: () => window.$message?.info('设置开发中...'),
-  },
-  {
     icon: 'fluent:arrow-up-12-filled',
-    fn: () => window.scrollTo({ behavior: 'smooth', top: 0 }),
+    fn: () => window.scrollTo({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', top: 0 }),
   },
 ]
 </script>
 
 <template>
   <div class="fixed bottom-20 z-4 text-white transition-600 -right-9 space-y-1" :style="styleVal">
-    <div
+    <button
       v-for="item of options" :key="item.icon"
-      class="f-c-c cursor-pointer rounded-sm bg-#49b1f5 p-1 duration-300 hover:bg-amber"
+      type="button"
+      aria-label="回到顶部"
+      class="f-c-c cursor-pointer rounded-sm bg-brand p-2 text-on-brand duration-300 hover:bg-brand-hover"
+      @click="item.fn"
     >
-      <Icon class="h-5 w-5" :icon="item.icon" @click="item.fn" />
-    </div>
+      <Icon class="h-5 w-5" :icon="item.icon" />
+    </button>
   </div>
 </template>

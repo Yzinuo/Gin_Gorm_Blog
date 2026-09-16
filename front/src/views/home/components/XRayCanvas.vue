@@ -6,13 +6,13 @@
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
   >
-    <canvas ref="canvasRef" class="xray-canvas"></canvas>
+    <canvas ref="canvasRef" class="xray-canvas" :class="{ 'is-unavailable': hasError }" aria-label="随鼠标移动显示透视光效的博客封面"></canvas>
     
     <!-- 加载中指示器 (初始资源较大时优雅过渡) -->
     <Transition name="fade">
-      <div v-if="!isReady" class="loading-overlay">
+      <div v-if="!isReady && !hasError" class="loading-overlay">
         <div class="cyber-spinner"></div>
-        <span class="loading-text">SYSTEM INITIALIZING...</span>
+        <span class="loading-text">封面加载中…</span>
       </div>
     </Transition>
   </div>
@@ -24,6 +24,12 @@ import { ref, onMounted, onUnmounted } from 'vue';
 const containerRef = ref(null);
 const canvasRef = ref(null);
 const isReady = ref(false);
+const hasError = ref(false);
+let disposed = false;
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let positionBuffer = null;
+let isVisible = true;
+let intersectionObserver = null;
 
 // 配置参数
 const CONFIG = {
@@ -102,11 +108,11 @@ vec2 getCoverUV(vec2 uv, vec2 screenRes, vec2 imgRes) {
   vec2 newUV = uv;
   if (screenRatio > imgRatio) {
     // 屏幕更宽，按宽度撑满，Y方向上下居中裁切
-    float scale = screenRatio / imgRatio;
+    float scale = imgRatio / screenRatio;
     newUV.y = (uv.y - 0.5) * scale + 0.5;
   } else {
     // 屏幕更高，按高度撑满，X方向左右居中裁切
-    float scale = imgRatio / screenRatio;
+    float scale = screenRatio / imgRatio;
     newUV.x = (uv.x - 0.5) * scale + 0.5;
   }
   return newUV;
@@ -223,7 +229,9 @@ function initGL() {
   gl.useProgram(program);
 
   // 全屏四边形顶点数据
-  const positionBuffer = gl.createBuffer();
+  gl.deleteShader(vs);
+  gl.deleteShader(fs);
+  positionBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
   gl.bufferData(
     gl.ARRAY_BUFFER,
@@ -251,6 +259,7 @@ function loadTexture(gl, url) {
     const image = new Image();
     image.crossOrigin = 'anonymous';
     image.onload = () => {
+      if (disposed) { gl.deleteTexture(texture); reject(new Error('Page disposed')); return; }
       gl.bindTexture(gl.TEXTURE_2D, texture);
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
@@ -263,7 +272,7 @@ function loadTexture(gl, url) {
 
       resolve(texture);
     };
-    image.onerror = (e) => reject(e);
+    image.onerror = (e) => { gl.deleteTexture(texture); reject(e); };
     image.src = url;
   });
 }
@@ -285,6 +294,11 @@ function resizeCanvas() {
 }
 
 function render() {
+  if (disposed) return;
+  if (!isVisible || document.hidden) {
+    animationFrameId = requestAnimationFrame(render);
+    return;
+  }
   if (!gl || !program || !isReady.value) {
     animationFrameId = requestAnimationFrame(render);
     return;
@@ -293,7 +307,7 @@ function render() {
   const now = performance.now();
   const dt = Math.min((now - state.lastFrameTime) / 1000, 0.1);
   state.lastFrameTime = now;
-  const elapsed = (now - state.startTime) / 1000;
+  const elapsed = reducedMotion ? 0 : (now - state.startTime) / 1000;
 
   const canvas = canvasRef.value;
   const width = canvas.width;
@@ -365,11 +379,12 @@ function render() {
 
   gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-  animationFrameId = requestAnimationFrame(render);
+  if (!reducedMotion) animationFrameId = requestAnimationFrame(render);
 }
 
 // 鼠标交互事件
 function handleMouseMove(e) {
+  if (reducedMotion) return;
   const container = containerRef.value;
   if (!container) return;
 
@@ -403,7 +418,9 @@ function handleMouseLeave() {
 let resizeObserver = null;
 
 onMounted(async () => {
-  if (!initGL()) return;
+  if (!initGL()) { hasError.value = true; return; }
+  intersectionObserver = new IntersectionObserver(([entry]) => { isVisible = entry.isIntersecting; });
+  intersectionObserver.observe(containerRef.value);
 
   resizeCanvas();
 
@@ -416,10 +433,12 @@ onMounted(async () => {
   state.prevX = state.targetX;
   state.prevY = state.targetY;
   state.targetHover = 0.85; // 页面加载后默认显露一处 X-Ray 唤起好奇心
+  if (reducedMotion) state.hoverFactor = 0.85;
 
   // 监听容器尺寸调整
   resizeObserver = new ResizeObserver(() => {
     resizeCanvas();
+    if (reducedMotion && isReady.value) render();
   });
   if (containerRef.value) {
     resizeObserver.observe(containerRef.value);
@@ -431,17 +450,23 @@ onMounted(async () => {
       loadTexture(gl, CONFIG.imgBeforeUrl),
       loadTexture(gl, CONFIG.imgAfterUrl),
     ]);
+    if (disposed) { gl.deleteTexture(tBefore); gl.deleteTexture(tAfter); return; }
     textureBefore = tBefore;
     textureAfter = tAfter;
     isReady.value = true;
   } catch (err) {
+    if (disposed) return;
+    hasError.value = true;
     console.error('Failed to load X-Ray textures:', err);
+    return;
   }
 
   animationFrameId = requestAnimationFrame(render);
 });
 
 onUnmounted(() => {
+  disposed = true;
+  intersectionObserver?.disconnect();
   if (animationFrameId) {
     cancelAnimationFrame(animationFrameId);
   }
@@ -452,6 +477,8 @@ onUnmounted(() => {
     if (textureBefore) gl.deleteTexture(textureBefore);
     if (textureAfter) gl.deleteTexture(textureAfter);
     if (program) gl.deleteProgram(program);
+    if (positionBuffer) gl.deleteBuffer(positionBuffer);
+    gl.getExtension('WEBGL_lose_context')?.loseContext();
   }
 });
 </script>
@@ -463,7 +490,7 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background-color: #0d0e15;
+  background: var(--bg-stage) url('/images/Before.png') center / cover no-repeat;
   cursor: crosshair;
   z-index: 1;
 }
@@ -473,15 +500,18 @@ onUnmounted(() => {
   height: 100%;
   display: block;
 }
+.xray-canvas.is-unavailable { visibility: hidden; }
 
 .loading-overlay {
   position: absolute;
   inset: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: #0d0e15;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 32px;
+  background: transparent;
+  pointer-events: none;
   z-index: 10;
   gap: 16px;
 }
