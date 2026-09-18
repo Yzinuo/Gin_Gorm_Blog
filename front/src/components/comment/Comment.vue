@@ -13,6 +13,7 @@ import Paging from './Paging.vue'
 import ULoading from '@/components/ui/ULoading.vue'
 
 import { convertImgUrl } from '@/utils'
+import { safeExternalUrl } from '@/utils/sanitize'
 import { useAppStore, useUserStore } from '@/store'
 import api from '@/api'
 
@@ -34,27 +35,33 @@ const topicId = +(useRoute().params.id ?? 0)
 const commentList = ref([]) // 评论列表 (分页加载)
 const commentCount = ref(0) // 评论总数量
 const listLoading = ref(false) // 列表加载状态
+const loadError = ref(false)
 const params = reactive({ type, page_size: 10, page_num: 1, topic_id: topicId }) // 加载评论的参数
+let activeRequest = 0
 
 async function getComments() {
+  const requestId = ++activeRequest
+  const page = params.page_num
   listLoading.value = true
+  loadError.value = false
   try {
-    const resp = await api.getComments(params)
-    console.log(resp.data.page_data)
-
-    // * 全局加载更多, 0.8s 延时
-    setTimeout(() => {
-      params.page_num === 1
-        ? commentList.value = resp.data.page_data
-        : commentList.value.push(...resp.data.page_data)
-      commentCount.value = resp.data.total
-      console.log(commentCount.value)
-      params.page_num++
-      listLoading.value = false
-    }, 800)
+    const resp = await api.getComments({ ...params, page_num: page })
+    if (requestId !== activeRequest)
+      return
+    if (page === 1)
+      commentList.value = resp.data.page_data
+    else
+      commentList.value.push(...resp.data.page_data)
+    commentCount.value = resp.data.total
+    params.page_num = page + 1
   }
-  catch (err) {
-    console.error(err)
+  catch {
+    if (requestId === activeRequest)
+      loadError.value = true
+  }
+  finally {
+    if (requestId === activeRequest)
+      listLoading.value = false
   }
 }
 // 重新加载评论(提交评论以后)
@@ -78,13 +85,13 @@ const replyFieldRefs = ref(null)
 // 回复评论
 function replyComment(idx, obj) {
   // 关闭所有回复框
-  replyFieldRefs.value.forEach(e => e.setReply(false))
+  replyFieldRefs.value?.forEach(e => e.setReply(false))
   // 打开当前点击的回复框
   const curRef = replyFieldRefs.value[idx]
   if (curRef) {
     curRef.setReply(true)
     // * 将值传给回复框
-    curRef.data.nickname = obj.nickname // 用户昵称
+    curRef.data.nickname = obj.user?.info?.nickname || '' // 用户昵称
     curRef.data.reply_user_id = obj.user_id // 回复用户 id
     curRef.data.parent_id = commentList.value[idx].id // 父评论 id
   }
@@ -92,34 +99,30 @@ function replyComment(idx, obj) {
 
 // 提交回复后, 重新加载评论回复
 const pageRefs = ref([]) // 分页
-const checkRefs = ref([]) // 查看
-async function reloadReplies(idx) {
-  const { data } = await api.getCommentReplies(
-    commentList.value[idx].id,
-    { page_size: 5, page_num: pageRefs.value[idx].current },
-  )
-  // * 局部更新某个评论的回复
-  commentList.value[idx].reply_list = data
-  commentList.value[idx].reply_count++ // 数量 + 1
-  // 回复大于 5 条展示评论分页
-  commentList.value[idx].reply_count > 5 && (pageRefs.value[idx].setShow(true))
-  // 直接隐藏查看
-  checkRefs.value[idx].style.display = 'none' // * dom 操作隐藏 "查看"
+const expandedCommentIds = ref([])
+function reloadReplies() {
+  // 新回复可能需要审核；重新取服务端聚合的数量，避免显示不存在的回复。
+  reloadComments()
 }
 
 // "点击查看" 显示更多回复
 async function checkReplies(idx, obj) {
-  // 查第一页 (5 条数据)
-  const { data } = await api.getCommentReplies(
-    obj.id,
-    { page_num: 1, page_size: 5 },
-  )
-  // 更新对应楼评论的回复列表
-  obj.reply_list = data
-  // 超过 5 条数据显示分页
-  obj.reply_count > 5 && (pageRefs.value[idx].setShow(true))
-  // 隐藏 "点击查看"
-  checkRefs.value[idx].style.display = 'none' // * dom 操作隐藏 "查看"
+  try {
+    // 查第一页 (5 条数据)
+    const { data } = await api.getCommentReplies(
+      obj.id,
+      { page_num: 1, page_size: 5 },
+    )
+    // 更新对应楼评论的回复列表
+    obj.reply_list = data
+    // 超过 5 条数据显示分页
+    if (obj.reply_count > 5)
+      pageRefs.value[idx]?.setShow(true)
+    expandedCommentIds.value = [...expandedCommentIds.value, obj.id]
+  }
+  catch {
+    window.$message?.error('回复暂时无法加载')
+  }
 }
 
 // 修改回复分页中当前页数
@@ -175,7 +178,10 @@ const isLike = computed(() => id => userStore.commentLikeSet.includes(id))
       @after-submit="reloadComments"
     />
     <!-- 评论详情 -->
-    <div v-if="commentCount && refresh">
+    <div v-if="listLoading && !commentList.length" class="mb-10 mt-30 text-center text-zinc" role="status">
+      正在加载评论…
+    </div>
+    <div v-else-if="commentCount && refresh">
       <!-- 评论数量 -->
       <p class="mb-4 mt-7 flex items-center text-xl font-bold">
         <span> {{ commentCount }} 评论 </span>
@@ -194,9 +200,10 @@ const isLike = computed(() => id => userStore.commentLikeSet.includes(id))
             <span v-if="!comment.user?.info?.website" class="text-sm">
               {{ comment.user?.info?.nickname }}
             </span>
-            <a v-else :href="comment.user?.info?.website" target="_blank" class="color-brand font-500 transition-300">
+            <a v-else-if="safeExternalUrl(comment.user?.info?.website)" :href="safeExternalUrl(comment.user?.info?.website)" target="_blank" rel="noopener noreferrer" class="color-brand font-500 transition-300">
               {{ comment.user?.info?.nickname }}
             </a>
+            <span v-else class="text-sm">{{ comment.user?.info?.nickname }}</span>
             <!-- TODO: 博主标记 -->
             <!-- <span v-if="comment.user_id === 10" class="ml-2 inline-block rounded-3 bg-#ffa51e px-6 py-1 text-xs color-#fff">
               博主
@@ -219,7 +226,9 @@ const isLike = computed(() => id => userStore.commentLikeSet.includes(id))
             </button>
           </div>
           <!-- 评论内容 -->
-          <div class="my-1" v-html="comment.content" />
+          <div class="my-1 whitespace-pre-wrap break-words">
+            {{ comment.content }}
+          </div>
           <!-- 评论回复 start -->
           <div v-for="reply of comment.reply_list" :key="reply.id" class="mt-2 flex">
             <img :src="convertImgUrl(reply.user?.info?.avatar)" class="h-[40px] w-[40px] duration-600 hover:rotate-360">
@@ -230,9 +239,10 @@ const isLike = computed(() => id => userStore.commentLikeSet.includes(id))
                 <span v-if="!reply.user?.info?.website" class="text-sm">
                   {{ reply.user?.info.nickname }}
                 </span>
-                <a v-else :href="reply.user?.info?.website" target="_blank" class="color-brand font-500 transition-300">
+                <a v-else-if="safeExternalUrl(reply.user?.info?.website)" :href="safeExternalUrl(reply.user?.info?.website)" target="_blank" rel="noopener noreferrer" class="color-brand font-500 transition-300">
                   {{ reply.user?.info.nickname }}
                 </a>
+                <span v-else class="text-sm">{{ reply.user?.info?.nickname }}</span>
                 <!-- TODO: 博主标记 -->
                 <!-- <span v-if="reply.user_id === 10" class="ml-6 inline-block rounded-3 bg-#ffa51e px-6 py-1 text-sm color-#fff">
                   博主
@@ -257,14 +267,14 @@ const isLike = computed(() => id => userStore.commentLikeSet.includes(id))
               <div>
                 <!-- 回复用户名: 自己回复自己不显示 "@名称" -->
                 <template v-if="reply.user_id !== comment.user_id">
-                  <a v-if="reply.user?.info?.website" :href="reply.reply_website" target="_blank">
+                  <a v-if="safeExternalUrl(reply.user?.info?.website)" :href="safeExternalUrl(reply.user?.info?.website)" target="_blank" rel="noopener noreferrer">
                     @{{ reply.user?.info?.nickname }}
                   </a>
                   <span v-else>
                     @{{ reply.user?.info?.nickname }}
                   </span>，
                 </template>
-                <span class="my-3" v-html="reply.content" />
+                <span class="my-3 whitespace-pre-wrap break-words">{{ reply.content }}</span>
               </div>
             </div>
           </div>
@@ -272,8 +282,7 @@ const isLike = computed(() => id => userStore.commentLikeSet.includes(id))
 
           <!-- 回复数量 -->
           <div
-            v-show="comment.reply_count > 3"
-            ref="checkRefs"
+            v-show="comment.reply_count > 3 && !expandedCommentIds.includes(comment.id)"
             class="mt-4 text-[13px] color-muted"
           >
             共 <b> {{ comment.reply_count }} </b>  条回复
@@ -313,6 +322,9 @@ const isLike = computed(() => id => userStore.commentLikeSet.includes(id))
       </div>
     </div>
     <!-- 没有评论的提示 -->
+    <div v-else-if="loadError" class="mb-10 mt-30 text-center text-zinc" role="status">
+      评论暂时无法加载。<button class="ml-2 color-brand" @click="reloadComments">重新加载</button>
+    </div>
     <div v-else class="mb-10 mt-30 text-center text-zinc">
       暂无评论，来发评论吧~
     </div>

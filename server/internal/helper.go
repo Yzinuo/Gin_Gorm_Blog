@@ -20,8 +20,8 @@ import (
 
 func InitLogger(conf *g.Config) {
 	var level slog.Level
-	switch conf.Log.Level{
-	case "debug" :
+	switch conf.Log.Level {
+	case "debug":
 		level = slog.LevelDebug
 	case "info":
 		level = slog.LevelInfo
@@ -35,37 +35,37 @@ func InitLogger(conf *g.Config) {
 
 	option := &slog.HandlerOptions{
 		AddSource: false, //是否显示源文件的信息
-		Level : level,
-		ReplaceAttr: func(groups []string, a slog.Attr)slog.Attr{
-	            if a.Key == slog.TimeKey{
-					if t,ok := a.Value.Any().(time.Time); ok {
-						a.Value = slog.StringValue(t.Format(time.DateTime))
-					}
+		Level:     level,
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.TimeKey {
+				if t, ok := a.Value.Any().(time.Time); ok {
+					a.Value = slog.StringValue(t.Format(time.DateTime))
 				}
-				return a
+			}
+			return a
 		},
 	}
 
 	var handler slog.Handler
-	switch conf.Log.Format{
+	switch conf.Log.Format {
 	case "json":
-		handler = slog.NewJSONHandler(os.Stdout,option)
+		handler = slog.NewJSONHandler(os.Stdout, option)
 	case "text":
-		handler = slog.NewTextHandler(os.Stdout,option)
+		handler = slog.NewTextHandler(os.Stdout, option)
 	default:
-		handler = slog.NewTextHandler(os.Stdout,option)
+		handler = slog.NewTextHandler(os.Stdout, option)
 	}
 
 	logger := slog.New(handler)
 	slog.SetDefault(logger) // 设定默认的slog
 }
 
-func InitDatabase(conf *g.Config) *gorm.DB{
+func InitDatabase(conf *g.Config) *gorm.DB {
 	dbType := conf.DbType()
 	dsn := conf.DbDSN()
 
 	var level logger.LogLevel
-	switch conf.Log.Level{
+	switch conf.Log.Level {
 	case "silent":
 		level = logger.Silent
 	case "error":
@@ -79,7 +79,7 @@ func InitDatabase(conf *g.Config) *gorm.DB{
 	}
 
 	config := &gorm.Config{
-		Logger: logger.Default.LogMode(level),
+		Logger:                                   logger.Default.LogMode(level),
 		DisableForeignKeyConstraintWhenMigrating: true, // 禁用外键约束
 		SkipDefaultTransaction:                   true, // 禁用默认事务（提高运行速度）
 		NamingStrategy: schema.NamingStrategy{
@@ -91,21 +91,21 @@ func InitDatabase(conf *g.Config) *gorm.DB{
 	var err error
 	switch dbType {
 	case "mysql":
-		db,err = gorm.Open(mysql.Open(dsn),config)
+		db, err = gorm.Open(mysql.Open(dsn), config)
 	case "sqlite":
-		db,err = gorm.Open(sqlite.Open(dsn),config)
+		db, err = gorm.Open(sqlite.Open(dsn), config)
 	default:
 		log.Fatalf("不支持的数据库类型")
 	}
-	
-	if err != nil{
+
+	if err != nil {
 		log.Fatal("连接数据库失败")
 	}
 	slog.Info("连接数据库成功")
 
-	if conf.Server.DbAutoMigrate{
-		if err := model.MakeMigrate(db);err != nil{
-			log.Fatalf("数据库迁移失败",err)
+	if conf.Server.DbAutoMigrate {
+		if err := model.MakeMigrate(db); err != nil {
+			log.Fatalf("数据库迁移失败: %v", err)
 		}
 		slog.Info("数据库自动迁移成功")
 	}
@@ -114,13 +114,13 @@ func InitDatabase(conf *g.Config) *gorm.DB{
 
 func InitRedis(conf *g.Config) *redis.Client {
 	rdb := redis.NewClient(&redis.Options{
-		Addr: conf.Redis.Addr,
+		Addr:     conf.Redis.Addr,
 		Password: conf.Redis.Password,
-		DB: conf.Redis.DB,
+		DB:       conf.Redis.DB,
 	})
 
-    _,err := rdb.Ping(context.Background()).Result()
-	if err != nil{
+	_, err := rdb.Ping(context.Background()).Result()
+	if err != nil {
 		log.Fatal("连接redis失败")
 	}
 

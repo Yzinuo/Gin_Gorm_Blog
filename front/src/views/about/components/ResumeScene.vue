@@ -1,15 +1,16 @@
 <script setup>
-import { nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { createResumeScene } from '../scene'
 import cameraMap from '../camera-map.json'
 
-const props = defineProps({ story: Object })
+const props = defineProps({ story: Object, stickers: { type: Array, default: () => [] } })
 const emit = defineEmits(['chapter'])
 const stage = ref(null)
 const canvas = ref(null)
-const status = ref('loading')
+const status = ref('idle')
 const progress = ref(0)
 const attempt = ref(0)
+const stickerError = ref(false)
 let scene
 let disposed = false
 
@@ -26,6 +27,8 @@ async function start() {
     stage: stage.value,
     map: cameraMap,
     getSections: () => props.story?.querySelectorAll('[data-frame]') || [],
+    getStickers: () => props.stickers,
+    onStickerError: failed => stickerError.value = failed,
     onProgress: value => progress.value = value,
     onReady: () => status.value = 'ready',
     onChapter: value => emit('chapter', value),
@@ -34,7 +37,17 @@ async function start() {
 }
 
 defineExpose({ focus: frame => scene?.focus(frame) })
-onMounted(start)
+watch(() => props.stickers, () => scene?.updateStickers(), { deep: true })
+onMounted(() => {
+  const connection = navigator.connection
+  const constrainedNetwork = connection?.saveData || ['slow-2g', '2g', '3g'].includes(connection?.effectiveType)
+  // The model is large enough that on a constrained connection visitors should
+  // decide whether to download it; all written content remains available.
+  if (constrainedNetwork || matchMedia('(max-width: 640px)').matches)
+    return
+  const schedule = window.requestIdleCallback || (callback => setTimeout(callback, 1200))
+  schedule(() => !disposed && start(), { timeout: 4000 })
+})
 onUnmounted(() => {
   disposed = true
   scene?.dispose()
@@ -47,7 +60,14 @@ onUnmounted(() => {
     <div class="stage-shade" />
     <div v-if="status !== 'ready'" class="scene-status" role="status" aria-live="polite">
       <span class="loading-monogram" aria-hidden="true">Z.</span>
-      <template v-if="status === 'loading'">
+      <template v-if="status === 'idle'">
+        <p>互动场景已准备好</p>
+        <button type="button" class="the-button" @click="start">
+          加载 3D 场景
+        </button>
+        <small>移动网络下按需加载，不影响阅读下方经历。</small>
+      </template>
+      <template v-else-if="status === 'loading'">
         <p>正在展开我的世界</p>
         <progress :value="progress" max="100" aria-label="3D 场景加载进度" />
         <span>{{ progress }}%</span>
@@ -62,6 +82,10 @@ onUnmounted(() => {
       </template>
     </div>
     <slot v-if="status === 'ready'" />
+    <div v-if="status === 'ready' && stickerError" class="sticker-error" role="status">
+      部分贴纸加载失败，暂用原图。
+      <button type="button" @click="scene?.updateStickers()">重试</button>
+    </div>
   </div>
 </template>
 
@@ -73,6 +97,8 @@ onUnmounted(() => {
   background: radial-gradient(ellipse at 54% 44%, #82655f 0, #503c3d 38%, #251c22 78%);
   color: var(--text-primary);
 }
+.sticker-error { position: absolute; top: 95px; left: 20px; right: 20px; z-index: 2; padding: 12px; background: #211e21e8; font-size: 12px; }
+.sticker-error button { color: var(--brand); margin-left: 10px; text-decoration: underline; }
 canvas {
   display: block;
   width: 100%;
@@ -104,6 +130,8 @@ canvas {
   font-size: 16px;
   letter-spacing: 2px;
 }
+.scene-status .the-button { padding: 10px 18px; border-radius: 6px; color: #171114; background: var(--brand); cursor: pointer; }
+.scene-status .the-button:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 4px; }
 .scene-status small, .scene-status > span:last-of-type {
   color: var(--text-muted);
   font-size: 12px;

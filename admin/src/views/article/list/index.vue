@@ -1,11 +1,12 @@
 <script setup>
 import { defineOptions, h, onActivated, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { NButton, NImage, NInput, NPopconfirm, NSelect, NSwitch, NTabPane, NTabs, NTag, NUpload } from 'naive-ui'
+import { NButton, NForm, NFormItem, NImage, NInput, NPopconfirm, NSelect, NSwitch, NTabPane, NTabs, NTag, NUpload } from 'naive-ui'
 
 import CommonPage from '@/components/common/CommonPage.vue'
 import QueryItem from '@/components/crud/QueryItem.vue'
 import CrudTable from '@/components/crud/CrudTable.vue'
+import CrudModal from '@/components/crud/CrudModal.vue'
 
 import { convertImgUrl, formatDate } from '@/utils'
 import { useCRUD } from '@/composables'
@@ -22,6 +23,14 @@ const categoryOptions = ref([])
 const tagOptions = ref([])
 
 const $table = ref(null)
+const feishuImportVisible = ref(false)
+const feishuImportLoading = ref(false)
+const feishuArchive = ref(null)
+const feishuImportForm = ref({
+  title: '',
+  category_name: '',
+  tag_names: [],
+})
 
 const queryItems = ref({
   title: '', // 标题
@@ -299,6 +308,53 @@ function afterUpload({ event }) {
   }
 }
 
+function openFeishuImport() {
+  feishuArchive.value = null
+  feishuImportForm.value = { title: '', category_name: '', tag_names: [] }
+  feishuImportVisible.value = true
+}
+
+function handleFeishuArchiveChange({ file }) {
+  feishuArchive.value = file?.file ?? null
+}
+
+async function submitFeishuImport() {
+  const form = feishuImportForm.value
+  if (!form.title.trim() || !form.category_name || !form.tag_names.length || !feishuArchive.value) {
+    $message.error('请填写标题、分类、标签并选择 ZIP 文件')
+    return
+  }
+  if (!feishuArchive.value.name.toLowerCase().endsWith('.zip')) {
+    $message.error('请选择飞书导出的 ZIP 文件')
+    return
+  }
+
+  const data = new FormData()
+  data.append('file', feishuArchive.value)
+  data.append('title', form.title.trim())
+  data.append('category_name', form.category_name)
+  data.append('tag_names', JSON.stringify(form.tag_names))
+
+  feishuImportLoading.value = true
+  try {
+    const response = await api.importFeishuArchive(data)
+    feishuImportVisible.value = false
+    await $table.value?.handleSearch()
+    const failedImages = response.data?.failed_images ?? []
+    if (failedImages.length) {
+      const failedNames = failedImages.slice(0, 3).map(item => item.path).join('、')
+      const remaining = failedImages.length > 3 ? ' 等' : ''
+      $message.warning(`已创建草稿；${failedImages.length} 张图片未上传：${failedNames}${remaining}`)
+    }
+    else {
+      $message.success(`已创建草稿，并上传 ${response.data?.uploaded_images ?? 0} 张图片`)
+    }
+  }
+  finally {
+    feishuImportLoading.value = false
+  }
+}
+
 function downloadFile(content, fileName) {
   const aEle = document.createElement('a') // 创建下载链接
   aEle.download = fileName // 设置下载的名称
@@ -359,6 +415,12 @@ function downloadFile(content, fileName) {
           </NButton>
         </NUpload>
       </div>
+      <NButton type="success" secondary @click="openFeishuImport">
+        <template #icon>
+          <i class="i-mdi:archive-arrow-up-outline" />
+        </template>
+        导入飞书 ZIP
+      </NButton>
     </template>
 
     <NTabs type="line" animated @update:value="handleChangeTab">
@@ -420,5 +482,44 @@ function downloadFile(content, fileName) {
         </QueryItem>
       </template>
     </CrudTable>
+    <CrudModal
+      v-model:visible="feishuImportVisible"
+      title="导入飞书 Markdown"
+      :loading="feishuImportLoading"
+      ok-text="创建草稿"
+      @save="submitFeishuImport"
+    >
+      <NForm label-placement="left" :label-width="80">
+        <NFormItem label="文章标题" required>
+          <NInput v-model:value="feishuImportForm.title" placeholder="输入文章标题" />
+        </NFormItem>
+        <NFormItem label="文章分类" required>
+          <NSelect
+            v-model:value="feishuImportForm.category_name"
+            filterable tag
+            placeholder="选择或输入分类"
+            :options="categoryOptions"
+          />
+        </NFormItem>
+        <NFormItem label="文章标签" required>
+          <NSelect
+            v-model:value="feishuImportForm.tag_names"
+            multiple filterable tag
+            placeholder="选择或输入标签"
+            :options="tagOptions"
+          />
+        </NFormItem>
+        <NFormItem label="飞书 ZIP" required>
+          <NUpload
+            accept=".zip,application/zip"
+            :default-upload="false"
+            :max="1"
+            @change="handleFeishuArchiveChange"
+          >
+            <NButton>选择飞书导出的 ZIP</NButton>
+          </NUpload>
+        </NFormItem>
+      </NForm>
+    </CrudModal>
   </CommonPage>
 </template>

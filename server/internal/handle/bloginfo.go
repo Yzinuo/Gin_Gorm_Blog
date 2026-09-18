@@ -116,10 +116,18 @@ func (* BlogInfo) GetBlogInfo (c *gin.Context){
 }
 
 func (*BlogInfo) GetAbout(c *gin.Context) {
+	if c.Query("view") == "resume" {
+		getResume(c)
+		return
+	}
 	ReturnSuccess(c, model.GetValueByKey(GetDB(c), g.CONFIG_ABOUT))
 }
 
 func (*BlogInfo) UpdateAbout (c *gin.Context){
+	if c.Query("view") == "resume" {
+		updateResume(c)
+		return
+	}
 	var req AboutReq
 	
 	if err := c.ShouldBindJSON(&req); err !=nil{

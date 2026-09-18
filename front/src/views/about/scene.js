@@ -36,7 +36,7 @@ function disposeModel(model) {
   geometries.forEach(geometry => geometry.dispose())
 }
 
-export function createResumeScene({ canvas, stage, map, getSections, onProgress, onReady, onChapter, onError }) {
+export function createResumeScene({ canvas, stage, map, getSections, getStickers = () => [], onStickerError = () => {}, onProgress, onReady, onChapter, onError }) {
   const controller = new AbortController()
   const { signal } = controller
   const motion = matchMedia('(prefers-reduced-motion: reduce)')
@@ -51,12 +51,92 @@ export function createResumeScene({ canvas, stage, map, getSections, onProgress,
   let disposed = false
   let pointerActive = false
   const eyes = []
+  const stickerMaterials = new Map()
+  const sourceMaterials = new Set()
+  let stickerRevision = 0
   const mouse = new THREE.Vector2()
   const eyeCenter = new THREE.Vector3()
   const position = new THREE.Vector3()
   const offset = new THREE.Quaternion()
   const desired = new THREE.Quaternion()
   const rotation = new THREE.Euler(0, 0, 0, 'YXZ')
+
+  async function updateStickers() {
+    if (!model || disposed || !stickerMaterials.size)
+      return
+    const revision = ++stickerRevision
+    const results = await Promise.allSettled(getStickers().map(async (sticker) => {
+      const slots = stickerMaterials.get(sticker.object)
+      if (!slots)
+        return
+      if (!sticker.image) {
+        slots.forEach(({ material, original }) => {
+          if (material.map !== original)
+            material.map?.dispose()
+          material.map = original
+          material.needsUpdate = true
+        })
+        return
+      }
+      const timeout = new AbortController()
+      const abort = () => timeout.abort()
+      signal.addEventListener('abort', abort, { once: true })
+      const timer = setTimeout(abort, 15000)
+      let bitmap
+      try {
+        const response = await fetch(sticker.image, { signal: timeout.signal })
+        if (!response.ok)
+          throw new Error('Sticker unavailable')
+        bitmap = await createImageBitmap(await response.blob())
+        if (disposed || revision !== stickerRevision)
+          return
+        slots.forEach(({ material, original }) => {
+          // Preserve the original UV transform and aspect ratio. Fit new images
+          // inside the texture without stretching the sticker geometry.
+          const surface = document.createElement('canvas')
+          const ratio = (original?.image?.width || 1) / (original?.image?.height || 1)
+          surface.width = ratio >= 1 ? 1024 : Math.round(1024 * ratio)
+          surface.height = ratio >= 1 ? Math.round(1024 / ratio) : 1024
+          const scale = Math.min(surface.width / bitmap.width, surface.height / bitmap.height)
+          surface.getContext('2d').drawImage(bitmap, (surface.width - bitmap.width * scale) / 2, (surface.height - bitmap.height * scale) / 2, bitmap.width * scale, bitmap.height * scale)
+          const texture = new THREE.CanvasTexture(surface)
+          texture.flipY = original?.flipY ?? false
+          texture.colorSpace = THREE.SRGBColorSpace
+          if (original) {
+            texture.channel = original.channel
+            texture.offset.copy(original.offset)
+            texture.repeat.copy(original.repeat)
+            texture.center.copy(original.center)
+            texture.rotation = original.rotation
+            texture.wrapS = original.wrapS
+            texture.wrapT = original.wrapT
+          }
+          if (material.map !== original)
+            material.map?.dispose()
+          material.map = texture
+          material.needsUpdate = true
+        })
+      }
+      catch (error) {
+        if (!disposed && revision === stickerRevision) {
+          slots.forEach(({ material, original }) => {
+            if (material.map !== original)
+              material.map?.dispose()
+            material.map = original
+            material.needsUpdate = true
+          })
+        }
+        throw error
+      }
+      finally {
+        bitmap?.close()
+        clearTimeout(timer)
+        signal.removeEventListener('abort', abort)
+      }
+    }))
+    if (!disposed && revision === stickerRevision)
+      onStickerError(results.some(result => result.status === 'rejected'))
+  }
 
   function updateScroll() {
     manualFrame = null
@@ -124,7 +204,15 @@ export function createResumeScene({ canvas, stage, map, getSections, onProgress,
     mixer?.stopAllAction()
     if (model)
       mixer?.uncacheRoot(model)
+    stickerMaterials.forEach(slots => slots.forEach(({ material, original }) => {
+      if (material.map !== original)
+        material.map?.dispose()
+      material.map = original
+    }))
+    stickerMaterials.clear()
     disposeModel(model)
+    sourceMaterials.forEach(material => material.dispose())
+    sourceMaterials.clear()
     environment?.dispose()
     renderer?.dispose()
     renderer?.forceContextLoss()
@@ -200,7 +288,12 @@ export function createResumeScene({ canvas, stage, map, getSections, onProgress,
       }
       model.traverse((object) => {
         if (object.isMesh && object.name.startsWith('sticker_')) {
-          [].concat(object.material).forEach((material) => {
+          const originals = [].concat(object.material)
+          originals.forEach(material => sourceMaterials.add(material))
+          object.material = Array.isArray(object.material) ? object.material.map(material => material.clone()) : object.material.clone()
+          const materials = [].concat(object.material)
+          stickerMaterials.set(object.name, materials.map(material => ({ material, original: material.map })))
+          materials.forEach((material) => {
             material.transparent = false
             material.alphaTest = 0.5
             material.side = THREE.DoubleSide
@@ -208,6 +301,7 @@ export function createResumeScene({ canvas, stage, map, getSections, onProgress,
           })
         }
       })
+      updateStickers()
       window.addEventListener('scroll', updateScroll, { passive: true, signal })
       window.addEventListener('resize', resize, { passive: true, signal })
       window.addEventListener('pointermove', (event) => {
@@ -245,5 +339,5 @@ export function createResumeScene({ canvas, stage, map, getSections, onProgress,
     }
   }
   load()
-  return { dispose, focus: frame => manualFrame = frame }
+  return { dispose, updateStickers, focus: frame => manualFrame = frame }
 }

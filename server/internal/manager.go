@@ -101,6 +101,7 @@ func RegisterAdminHandler(r *gin.Engine){
 		article.DELETE("",articleAPI.DeleteArticle)
 		article.POST("/export",articleAPI.Export)
 		article.POST("/import",articleAPI.Import) // 导入文章
+		article.POST("/import/feishu",articleAPI.ImportFeishuArchive)
 	}
 	comment := auth.Group("comment")
 	{
@@ -201,16 +202,17 @@ func RegisterFrontHandler(r *gin.Engine){
 		comment.GET("/replies/:comment_id",frontAPI.GetReplyListByCommentId)
 	}
 
-	base.Use(middleware.JWTAuth()) //需要登录才能进行的操作，在前端中使用下列API还会有额外的逻辑：检查是否有用户信息，没有则跳出登录框
+	// 前台写操作不参与后台的资源权限表，必须使用强制 JWT 校验。
+	authenticated := base.Group("")
+	authenticated.Use(middleware.JWTAuthRequired())
 	{
-		base.POST("/upload",uploadAPI.UploadFile) // 上传文件
-		base.GET("/user/info",userAPI.GetInfo)  // 获得用户信息
-		base.PUT("/user/info",userAPI.UpdateCurrent) // 更新用户信息
-		base.POST("/message",frontAPI.SaveMessage)   //新增留言
-		base.POST("/comment",frontAPI.SaveComment)   // 新增评论
-		//本身是要用POST方法的，但是因为handler内部接收数据的细节，使用GET
-		base.GET("/comment/like/:comment_id",frontAPI.LikeComment) // 前台点赞评论
-		base.GET("/article/like/:article_id",frontAPI.LikeArticle) // 前台点赞文章
+		authenticated.POST("/upload", uploadAPI.UploadFile)                   // 上传文件
+		authenticated.GET("/user/info", userAPI.GetInfo)                      // 获得用户信息
+		authenticated.PUT("/user/info", userAPI.UpdateCurrent)                // 更新用户信息
+		authenticated.POST("/message", frontAPI.SaveMessage)                  //新增留言
+		authenticated.POST("/comment", frontAPI.SaveComment)                  // 新增评论
+		authenticated.POST("/comment/like/:comment_id", frontAPI.LikeComment) // 前台点赞评论
+		authenticated.POST("/article/like/:article_id", frontAPI.LikeArticle) // 前台点赞文章
 	}
 
 }

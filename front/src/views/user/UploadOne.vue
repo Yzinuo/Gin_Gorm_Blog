@@ -1,7 +1,7 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { convertImgUrl } from '@/utils'
-import { useUserStore } from '@/store'
+import { request } from '@/utils/http'
 
 const props = defineProps({
   preview: {
@@ -12,6 +12,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:preview'])
 const previewImg = ref(props.preview) // 图片预览
+watch(() => props.preview, value => previewImg.value = value)
 
 // 判断是本地上传的图片或网络资源
 // 开发环境可以使用本地文件上传, 生产环境建议使用云存储
@@ -21,26 +22,14 @@ const fileRef = ref(null)
 
 async function handleFileChange() {
   const file = fileRef.value.files[0]
+  if (!file)
+    return
   const formData = new FormData()
   formData.append('file', file)
   try {
-    const { token } = useUserStore()
-    const response = await fetch('/api/front/upload', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: formData,
-    })
-
-    const responseJSON = await response.json()
-    if (responseJSON.code !== 0) {
-      window.$message?.error(responseJSON.message)
-      return
-    }
-
-    previewImg.value = responseJSON.data
-    emit('update:preview', previewImg)
+    const response = await request.post('/upload', formData, { needToken: true })
+    previewImg.value = response.data
+    emit('update:preview', previewImg.value)
   }
   catch (err) {
     console.error(err)
@@ -69,7 +58,7 @@ async function handleFileChange() {
           </div>
         </div>
       </template>
-      <input id="dropzone-file" ref="fileRef" type="file" class="hidden" @change="handleFileChange">
+      <input id="dropzone-file" ref="fileRef" type="file" accept="image/avif,image/gif,image/jpeg,image/png,image/webp" class="hidden" @change="handleFileChange">
     </label>
   </main>
 </template>

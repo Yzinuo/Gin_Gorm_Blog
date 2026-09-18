@@ -16,6 +16,7 @@ export default {
   updateArticleTop: (id, is_top) => request.put('/article/top', { id, is_top }), // 修改文章置顶
   exportArticles: (data = []) => request.post('/article/export', data), // 导出文章
   importArticles: data => request.post('/article/import', data), // 导入文章
+  importFeishuArchive: data => request.post('/article/import/feishu', data),
 
   // 分类相关接口
   getCategorys: (params = {}) => request.get('/category/list', { params }),
@@ -66,6 +67,8 @@ export default {
   // getBlogConfig: () => request.get('/setting/blog-config'),
   // updateBlogConfig: data => request.put('/setting/blog-config', data),
   getAbout: () => request.get('/setting/about'),
+  getResume: () => request.get('/setting/about', { params: { view: 'resume' } }),
+  updateResume: data => request.put('/setting/about?view=resume', data),
   updateAbout: data => request.put('/setting/about', data),
 
   // 权限管理相关接口

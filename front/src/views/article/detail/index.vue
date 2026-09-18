@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { marked } from 'marked'
 import hljs from 'highlight.js/lib/core'
@@ -22,6 +22,7 @@ import AppFooter from '@/components/layout/AppFooter.vue'
 import Comment from '@/components/comment/Comment.vue'
 
 import { convertImgUrl } from '@/utils'
+import { sanitizeHtml } from '@/utils/sanitize'
 import api from '@/api'
 
 hljs.registerLanguage('go', go)
@@ -52,26 +53,32 @@ const data = ref({
 // 文章内容
 const previewRef = ref(null)
 const loading = ref(true)
+const loadError = ref(false)
 
-onMounted(async () => {
+async function loadArticle() {
+  loading.value = true
+  loadError.value = false
   try {
     const resp = await api.getArticleDetail(route.params.id)
     data.value = resp.data
     // marked 解析 markdown 文本
-    data.value.content = await marked.parse(resp.data.content, { async: true })
+    data.value.content = sanitizeHtml(await marked.parse(resp.data.content, { async: true }))
     await nextTick()
     // highlight.js 代码高亮
-    document.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el))
+    previewRef.value?.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el))
     // MathJax 渲染公式
-    window.MathJax.typeset()
+    window.MathJax?.typeset?.([previewRef.value])
   }
-  catch (err) {
-    console.error(err)
+  catch {
+    loadError.value = true
   }
   finally {
     loading.value = false
   }
-})
+}
+
+onMounted(loadArticle)
+watch(() => route.params.id, loadArticle)
 
 const styleVal = computed(() =>
   data.value.img
@@ -88,8 +95,19 @@ const styleVal = computed(() =>
   <!-- 主体内容 -->
   <main class="flex-1">
     <div class="card-fade-up grid grid-cols-12 mx-auto mb-3 mt-[380px] gap-4 px-1 lg:mt-[440px] lg:max-w-[1200px]">
+      <div v-if="loadError" class="card-view col-span-12 mx-2 py-16 text-center lg:mx-0">
+        <h1 class="text-2xl font-bold">
+          文章暂时无法打开
+        </h1>
+        <p class="mt-3 text-muted">
+          它可能不存在、尚未公开，或网络暂时不可用。
+        </p>
+        <button type="button" class="the-button mt-6" @click="loadArticle">
+          重新加载
+        </button>
+      </div>
       <!-- 文章主体 -->
-      <div class="card-view col-span-12 mx-2 pt-7 lg:col-span-9 lg:mx-0">
+      <div v-else class="card-view col-span-12 mx-2 pt-7 lg:col-span-9 lg:mx-0">
         <!-- 文章内容 -->
         <article
           ref="previewRef"
@@ -127,7 +145,7 @@ const styleVal = computed(() =>
         <div class="sticky top-5 hidden lg:block space-y-4">
           <!-- 目录 -->
           <!-- TODO: v-if 的方法不太好, 想办法解决父组件接口获取数据, 子组件渲染问题 -->
-          <Catalogue v-if="!loading" :preview-ref="previewRef" />
+          <Catalogue v-if="!loading && !loadError" :preview-ref="previewRef" />
           <!-- 最新文章 -->
           <LatestList :article-list="data.newest_articles" />
         </div>

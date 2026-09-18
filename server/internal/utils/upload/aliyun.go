@@ -5,7 +5,9 @@ import (
 	"fmt"
 	g "gin-blog/internal/global"
 	"gin-blog/internal/utils"
+	"io"
 	"log"
+	"mime"
 	"mime/multipart"
 	"path"
 	"time"
@@ -14,6 +16,32 @@ import (
 )
 
 type Aliyun struct{}
+
+// UploadReader uploads a file obtained from an archive while preserving the
+// same public URL and object-key conventions as UploadFile.
+func (*Aliyun) UploadReader(filename string, reader io.Reader) (string, string, error) {
+	client, err := oss.New(g.GetConfig().Aliyun.Endpoint, g.GetConfig().Aliyun.AccessKeyID, g.GetConfig().Aliyun.AccessKeySecret)
+	if err != nil {
+		return "", "", fmt.Errorf("create aliyun OSS client: %w", err)
+	}
+
+	bucket, err := client.Bucket(g.GetConfig().Aliyun.Bucket)
+	if err != nil {
+		return "", "", fmt.Errorf("open aliyun OSS bucket: %w", err)
+	}
+
+	filekey := fmt.Sprintf("%s/%d%s%s", g.GetConfig().Aliyun.ImgPath, time.Now().UnixNano(), utils.MD5(filename), path.Ext(filename))
+	options := []oss.Option{oss.ObjectACL(oss.ACLPublicRead)}
+	if contentType := mime.TypeByExtension(path.Ext(filename)); contentType != "" {
+		options = append(options, oss.ContentType(contentType))
+	}
+	if err = bucket.PutObject(filekey, reader, options...); err != nil {
+		return "", "", fmt.Errorf("upload image to aliyun OSS: %w", err)
+	}
+
+	publicURL := fmt.Sprintf("https://%s.%s/%s", g.GetConfig().Aliyun.Bucket, g.GetConfig().Aliyun.Endpoint, filekey)
+	return publicURL, filekey, nil
+}
 
 
 func (*Aliyun) UploadFile(file *multipart.FileHeader) (string, string, error) {

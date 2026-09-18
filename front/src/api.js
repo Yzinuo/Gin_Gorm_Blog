@@ -9,6 +9,7 @@ export default {
 
   /** 关于我 */
   about: () => request.get('/about'),
+  getResume: () => request.get('/about', { params: { view: 'resume' } }),
   /** 获取页面 */
   getPageList: () => request.get('/page'),
   /** 首页数据 */
@@ -45,7 +46,7 @@ export default {
   /** 评论 */
   saveComment: data => request.post('/comment', data, { needToken: true }),
   /** 点赞评论 */
-  saveLikeComment: id => request.get(`/comment/like/${id}`, { needToken: true }),
+  saveLikeComment: id => request.post(`/comment/like/${id}`, null, { needToken: true }),
   /** 点赞文章 */
-  saveLikeArticle: id => request.get(`/article/like/${id}`, { needToken: true }),
+  saveLikeArticle: id => request.post(`/article/like/${id}`, null, { needToken: true }),
 }

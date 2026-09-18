@@ -9,6 +9,7 @@ import api from '@/api'
 const router = useRouter()
 
 const loading = ref(true)
+const loadError = ref(false)
 const total = ref(0)
 const archiveList = ref([])
 
@@ -16,13 +17,22 @@ const current = ref(1) // 当前页数
 watch(current, () => getArchives())
 
 async function getArchives() {
-  const resp = await api.getArchives({
-    page_num: current.value,
-    page_size: 50,
-  })
-  archiveList.value = resp.data.page_data
-  total.value = resp.data.total
-  loading.value = false
+  loading.value = true
+  loadError.value = false
+  try {
+    const resp = await api.getArchives({
+      page_num: current.value,
+      page_size: 50,
+    })
+    archiveList.value = resp.data.page_data
+    total.value = resp.data.total
+  }
+  catch {
+    loadError.value = true
+  }
+  finally {
+    loading.value = false
+  }
 }
 
 onMounted(() => {
@@ -52,25 +62,40 @@ onMounted(() => {
 
 <template>
   <BannerPage title="归档" label="archive" :loading="loading" card>
-    <p class="pb-5 text-lg lg:text-2xl">
-      目前共计 {{ archiveList.length }} 篇文章，继续加油！
-    </p>
-    <template v-for="(item, idx) of archiveList" :key="item.id">
-      <div class="flex items-center gap-2">
-        <div class="i-mdi:circle bg-brand text-sm" />
-        <span class="text-sm color-muted lg:text-base">
-          {{ dayjs(item.created_at).format('YYYY-MM-DD') }}
-        </span>
-        <a class="color-muted lg:text-lg hover:text-brand-hover" @click="router.push(`/article/${item.id}`)">
-          {{ item.title }}
-        </a>
-      </div>
-      <hr v-if="idx !== archiveList.length - 1" class="my-4 border-1 border-line border-dashed">
-    </template>
+    <div v-if="loadError" class="py-12 text-center" role="status">
+      <p class="text-muted">
+        归档暂时无法加载。
+      </p>
+      <button type="button" class="the-button mt-5" @click="getArchives">
+        重新加载
+      </button>
+    </div>
+    <template v-else>
+      <p class="pb-5 text-lg lg:text-2xl">
+        目前共计 {{ total }} 篇文章，继续加油！
+      </p>
+      <template v-for="(item, idx) of archiveList" :key="item.id">
+        <div class="flex items-center gap-2">
+          <div class="i-mdi:circle bg-brand text-sm" />
+          <span class="text-sm color-muted lg:text-base">
+            {{ dayjs(item.created_at).format('YYYY-MM-DD') }}
+          </span>
+          <a class="color-muted lg:text-lg hover:text-brand-hover" @click="router.push(`/article/${item.id}`)">
+            {{ item.title }}
+          </a>
+        </div>
+        <hr v-if="idx !== archiveList.length - 1" class="my-4 border-1 border-line border-dashed">
+      </template>
 
-    <!-- TODO: 分页 -->
-    <!-- <div class="my-15 mt-20 f-c-c">
-      <NPagination v-model:page="current" :page-count="Math.ceil(total / 10)" />
-    </div> -->
+      <div v-if="total > 50" class="mt-10 flex items-center justify-center gap-4 text-sm">
+        <button :disabled="current === 1" class="the-button disabled:cursor-not-allowed disabled:opacity-50" @click="current--">
+          上一页
+        </button>
+        <span class="text-muted">第 {{ current }} / {{ Math.ceil(total / 50) }} 页</span>
+        <button :disabled="current >= Math.ceil(total / 50)" class="the-button disabled:cursor-not-allowed disabled:opacity-50" @click="current++">
+          下一页
+        </button>
+      </div>
+    </template>
   </BannerPage>
 </template>

@@ -52,8 +52,8 @@ async function submitComment() {
 
   // 调用接口
   try {
-    await api.saveComment(data)
-    window.$message?.info('评论成功')
+    const resp = await api.saveComment(data)
+    window.$message?.[resp.data?.is_review ? 'success' : 'info'](resp.data?.is_review ? '评论成功' : '评论已提交，等待审核')
     data.content = ''
 
     isReply.value && setReply(false)

@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import dayjs from 'dayjs'
 
@@ -10,22 +10,49 @@ import api from '@/api'
 const route = useRoute()
 
 const loading = ref(true)
+const loadError = ref(false)
 const articleList = ref([])
 const name = ref(route.query.name) // 标题上显示的 标签/分类 名称
 
-onMounted(async () => {
-  const resp = await api.getArticles({
-    category_id: route.params.categoryId,
-    tag_id: route.params.tagId,
-  })
-  articleList.value = resp.data
-  loading.value = false
+async function loadArticles() {
+  loading.value = true
+  loadError.value = false
+  try {
+    const resp = await api.getArticles({
+      category_id: route.params.categoryId,
+      tag_id: route.params.tagId,
+    })
+    articleList.value = resp.data
+  }
+  catch {
+    loadError.value = true
+  }
+  finally {
+    loading.value = false
+  }
+}
+
+onMounted(loadArticles)
+watch(() => route.fullPath, () => {
+  name.value = route.query.name
+  loadArticles()
 })
 </script>
 
 <template>
   <BannerPage :loading="loading" :title="`${route.meta?.title} - ${name}`" label="article_list">
-    <div class="grid grid-cols-12 gap-4">
+    <div v-if="loadError" class="card-view py-16 text-center" role="status">
+      <p class="text-muted">
+        文章列表暂时无法加载。
+      </p>
+      <button type="button" class="the-button mt-5" @click="loadArticles">
+        重新加载
+      </button>
+    </div>
+    <div v-else-if="!articleList.length" class="card-view py-16 text-center text-muted">
+      这里暂时还没有文章。
+    </div>
+    <div v-else class="grid grid-cols-12 gap-4">
       <div v-for="article of articleList" :key="article.id" class="col-span-12 lg:col-span-4 md:col-span-6">
         <!-- 卡片 -->
         <div class="animate-zoom-in animate-duration-650 rounded-xl bg-surface pb-2 shadow-md transition-300 hover:shadow-2xl">

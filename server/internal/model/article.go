@@ -6,45 +6,45 @@ import (
 	"gorm.io/gorm"
 )
 
-const(
-	STATUS_PUBLIC = iota+1 // 文章状态，公开
-	STATUS_SERCET //私有
-	STATUS_DRAFT // 草稿
+const (
+	STATUS_PUBLIC = iota + 1 // 文章状态，公开
+	STATUS_SERCET            //私有
+	STATUS_DRAFT             // 草稿
 )
 
-const(
-	TYPE_ORIGINAL = iota +1 // 文章属性，原创
-	TYPE_REPRINT // 转载
-	TYPE_TRANSLATE // 翻译
+const (
+	TYPE_ORIGINAL  = iota + 1 // 文章属性，原创
+	TYPE_REPRINT              // 转载
+	TYPE_TRANSLATE            // 翻译
 )
 
 // 定义model 和数据库中的表对应
-type Article struct{
+type Article struct {
 	Model
 
-	Title  		string `gorm:"type:varchar(100);not null" json:"title"`
-	Desc   		string `json:"desc"`
-	Content		string `json:"content"`
-	Img			string `json:"img"`
-	Type		int 	`gorm:"type:tinyint;comment:类型(1-原创 2-转载 3-翻译)" json:"type"`
-	Status		int  	`gorm:"type:tinyint;comment:状态(1-公开 2-私密)" json:"status"`
-	IsTop		bool 	`json:"is_top"`
-	IsDelete	bool 	`json:"is_delete"`
-	OriginalUrl	string	`json:"original_url"`
+	Title       string `gorm:"type:varchar(100);not null" json:"title"`
+	Desc        string `json:"desc"`
+	Content     string `json:"content"`
+	Img         string `json:"img"`
+	Type        int    `gorm:"type:tinyint;comment:类型(1-原创 2-转载 3-翻译)" json:"type"`
+	Status      int    `gorm:"type:tinyint;comment:状态(1-公开 2-私密)" json:"status"`
+	IsTop       bool   `json:"is_top"`
+	IsDelete    bool   `json:"is_delete"`
+	OriginalUrl string `json:"original_url"`
 
 	CategoryId int `json:"category_id"`
 	UserId     int `json:"-"` // user_auth_id
-	
+
 	//指定多对多关系的关联表 ： article_tag  它的article_id标签和本model关联
-	Tags		[]*Tag	`gorm:"many2many:article_tag;joinForeignKey:article_id" json:"tags"`
+	Tags []*Tag `gorm:"many2many:article_tag;joinForeignKey:article_id" json:"tags"`
 	// Belong to 关联模式 定义外键 如Category就是定义CategoryId为指向Catefory的外键
-	Category	*Category `gorm:"foreignkey:CategoryId" json:"category"`
-	User		*UserAuth `gorm:"foreignkey:UserId" json:"user"`
+	Category *Category `gorm:"foreignkey:CategoryId" json:"category"`
+	User     *UserAuth `gorm:"foreignkey:UserId" json:"user"`
 }
 
-type ArticleTag struct{
-	ArticleId		int
-	TagId			int
+type ArticleTag struct {
+	ArticleId int
+	TagId     int
 }
 
 type ArticlePaginationVO struct {
@@ -73,222 +73,222 @@ type BlogArticleVO struct {
 	NewestArticles    []RecommendArticleVO `gorm:"-" json:"newest_articles"`    // 最新文章
 }
 
-func GetArticle(db *gorm.DB,id int) (data *Article,err error){
+func GetArticle(db *gorm.DB, id int) (data *Article, err error) {
 	data = &Article{}
 
 	result := db.Preload("Category").Preload("Tags").
-			Where(Article{Model : Model{ID : id}}).
-			First(&data)
-	
-	return data,result.Error
+		Where(Article{Model: Model{ID: id}}).
+		First(&data)
+
+	return data, result.Error
 }
 
 // 获取第一个可获取的文章（不在回收站并且状态为公开）
-func GetBlogArticle(db *gorm.DB, id int) (data *Article, err error){
+func GetBlogArticle(db *gorm.DB, id int) (data *Article, err error) {
 	data = &Article{}
-	
+
 	result := db.Preload("Category").Preload("Tags").
-			Where(Article{Model: Model{ID : id}}).
-			Where("is_delete = 0 AND status = 1").
-			First(&data)
-	return data,result.Error
+		Where(Article{Model: Model{ID: id}}).
+		Where("is_delete = 0 AND status = 1").
+		First(&data)
+	return data, result.Error
 }
 
-// 首页文章列表 
-func GetBlogArticleList(db *gorm.DB,page,size,CategoryId,TagId int) ( data []Article,err error,total int64){
+// 首页文章列表
+func GetBlogArticleList(db *gorm.DB, page, size, CategoryId, TagId int) (data []Article, err error, total int64) {
 	db = db.Model(Article{})
 	db = db.Where("is_delete = 0 AND status = 1")
 
 	if CategoryId != 0 {
-		db = db.Where("catagory_id = ?",CategoryId)
+		db = db.Where("category_id = ?", CategoryId)
 	}
 	if TagId != 0 {
-		db = db.Where("id IN (SELECT article_id FROM article_tag WHERE tag_id = ?)",TagId)
+		db = db.Where("id IN (SELECT article_id FROM article_tag WHERE tag_id = ?)", TagId)
 	}
 
 	db = db.Count(&total)
 	result := db.Preload("Category").Preload("Tags").
-				Order("is_top desc,id desc").
-				Scopes(Paginate(page,size)).
-				Find(&data)
-	
-	return data,result.Error,total
+		Order("is_top desc,id desc").
+		Scopes(Paginate(page, size)).
+		Find(&data)
+
+	return data, result.Error, total
 }
 
-func GetArticleList(db *gorm.DB, page, size int, title string, isDelete *bool, status, typ, categoryId, tagId int) (List []Article,total int64,err error){
+func GetArticleList(db *gorm.DB, page, size int, title string, isDelete *bool, status, typ, categoryId, tagId int) (List []Article, total int64, err error) {
 	db = db.Model(Article{})
 
-	if title != ""{
-		db = db.Where("title LIKE ?","%" + title + "%")
+	if title != "" {
+		db = db.Where("title LIKE ?", "%"+title+"%")
 	}
 	if isDelete != nil {
-		db = db.Where("is_delete",isDelete)
+		db = db.Where("is_delete", isDelete)
 	}
 	if status != 0 {
-		db = db.Where("status",status)
+		db = db.Where("status", status)
 	}
 	if typ != 0 {
-		db = db.Where("type",typ)
+		db = db.Where("type", typ)
 	}
-	if categoryId != 0{
-		db = db.Where("category_id",categoryId)
+	if categoryId != 0 {
+		db = db.Where("category_id", categoryId)
 	}
 
 	db = db.Preload("Category").Preload("Tags").
-			Joins("LEFT JOIN article_tag ON article_tag.article_id = article.id").
-			Group("id")
+		Joins("LEFT JOIN article_tag ON article_tag.article_id = article.id").
+		Group("id")
 	if tagId != 0 {
-		db = db.Where("tag_id = ?",tagId)
+		db = db.Where("tag_id = ?", tagId)
 	}
 
 	result := db.Count(&total).
-				Scopes(Paginate(page,size)).
-				Order("is_top DESC,id DESC").
-				Find(&List)
-	
-	return List,total,result.Error
+		Scopes(Paginate(page, size)).
+		Order("is_top DESC,id DESC").
+		Find(&List)
+
+	return List, total, result.Error
 }
 
 // 根据当前的标签，推荐文章
-func GetRecommandList(db *gorm.DB,id,n int)(list []RecommendArticleVO,err error){
+func GetRecommandList(db *gorm.DB, id, n int) (list []RecommendArticleVO, err error) {
 	// sub1: 查出对应标签列表
 	// SELECT tag_id FROM `article_tag` WHERE `article_id` = ?
 	sub1 := db.Table("article_tag").
-			Select("tag_id").
-			Where("article_id",id)
+		Select("tag_id").
+		Where("article_id", id)
 
 	// sub2: 根据本文章的Tag，找到有对应tag的文章id
-	//SELECT DISTINCT article_id FROM `sub1 t` 
+	//SELECT DISTINCT article_id FROM `sub1 t`
 	//JOIN `article_tag ON  article_tag.tag_id = t.tag_id`
 	// WHERE `aticle_id != ?`
-	sub2 := db.Table("(?) t",sub1).
-			Select("DISTINCT article_id").
-			Joins("JOIN article_tag t1 ON t1.tag_id = t.tag_id").
-			Where("article_id != ?",id)
+	sub2 := db.Table("(?) t", sub1).
+		Select("DISTINCT article_id").
+		Joins("JOIN article_tag t1 ON t1.tag_id = t.tag_id").
+		Where("article_id != ?", id)
 
 	// 更据得到的文章id 去Article数据库中找到对应信息
-	result := db.Table("(?) t2",sub2).
-			  Select("id","title","img","created_at").
-			  Joins("JOIN article ON article.id = t2.article_id").
-			  Where("is_delete",0).
-			  Order("is_top desc, id desc").
-			  Limit(n).
-			  Find(&list)
+	result := db.Table("(?) t2", sub2).
+		Select("id", "title", "img", "created_at").
+		Joins("JOIN article ON article.id = t2.article_id").
+		Where("is_delete", 0).
+		Order("is_top desc, id desc").
+		Limit(n).
+		Find(&list)
 
-	return list,result.Error
+	return list, result.Error
 }
 
 // 查询上一篇文章
-func GetLastArticle(db *gorm.DB,id int) (list ArticlePaginationVO,err error){
+func GetLastArticle(db *gorm.DB, id int) (list ArticlePaginationVO, err error) {
 	//Select max(id) FROM article WHERE id < id
 	sub1 := db.Table("article").
-			Select("max(id)").
-			Where("id < ?",id)
-	
+		Select("max(id)").
+		Where("id < ?", id)
+
 	// SELECT `id,img,title` FROM `article` WHERE `id = sub1`
 	result := db.Table("article").
-			Select("id,img,title").
-			Where("id = (?) AND is_delete = 0 AND status = 1",sub1).
-			Limit(1).
-			Find(&list)
-	
-	return list,result.Error
+		Select("id,img,title").
+		Where("id = (?) AND is_delete = 0 AND status = 1", sub1).
+		Limit(1).
+		Find(&list)
+
+	return list, result.Error
 }
 
 // 查询下一个文章
-func GetNextArticle(db *gorm.DB,id int) (list ArticlePaginationVO,err error){
-	
+func GetNextArticle(db *gorm.DB, id int) (list ArticlePaginationVO, err error) {
+
 	// SELECT `id,img,title` FROM `article` WHERE `id = sub1`
 	result := db.Table("article").
-			Select("id,img,title").
-			Where("id > ? AND is_delete = 0 AND status = 1",id).
-			Limit(1).
-			Find(&list)
-	
-	return list,result.Error
+		Select("id,img,title").
+		Where("id > ? AND is_delete = 0 AND status = 1", id).
+		Limit(1).
+		Find(&list)
+
+	return list, result.Error
 }
 
-func GetNewestList(db *gorm.DB, n int) (list []RecommendArticleVO,err error){
+func GetNewestList(db *gorm.DB, n int) (list []RecommendArticleVO, err error) {
 	result := db.Model(&Article{}).
-				Select("id","title","img","created_at").
-				Where("is_delete = 0 AND status = 1").
-				Order("created_at desc,id desc").
-				Limit(n).
-				Find(&list)
-	return list,result.Error
+		Select("id", "title", "img", "created_at").
+		Where("is_delete = 0 AND status = 1").
+		Order("created_at desc,id desc").
+		Limit(n).
+		Find(&list)
+	return list, result.Error
 }
 
 // 删除文章
-func DeleteArticle(db *gorm.DB,ids []int) (int64,error){
+func DeleteArticle(db *gorm.DB, ids []int) (int64, error) {
 	// 删除对应的 tag-article 关联
-	result := db.Where("article_id IN ?",ids).Delete(&ArticleTag{})
-	if result.Error != nil{
-		return 0,result.Error
+	result := db.Where("article_id IN ?", ids).Delete(&ArticleTag{})
+	if result.Error != nil {
+		return 0, result.Error
 	}
 
 	// 删除文章
-	result = db.Where("id IN ?",ids).Delete(&Article{})
-	if result.Error != nil{
-		return 0,result.Error
+	result = db.Where("id IN ?", ids).Delete(&Article{})
+	if result.Error != nil {
+		return 0, result.Error
 	}
 
-	return result.RowsAffected,nil
+	return result.RowsAffected, nil
 }
 
 // 软删除： 改变is_delete
-func UpdateArticleSoftDlete(db *gorm.DB,ids []int,isDelete bool) (int64,error){
+func UpdateArticleSoftDlete(db *gorm.DB, ids []int, isDelete bool) (int64, error) {
 	result := db.Model(&Article{}).
-				Where("id IN ?", ids).
-				Update("is_delete",isDelete)
-	
+		Where("id IN ?", ids).
+		Update("is_delete", isDelete)
+
 	if result.Error != nil {
-		return 0,result.Error
-	} 
-	return result.RowsAffected,nil
+		return 0, result.Error
+	}
+	return result.RowsAffected, nil
 }
 
 // 新增/编辑文章, 同时根据 分类名称, 标签名称 维护关联表
 // 为新增/修改的文章，维护tag，category 的关联表
-func SvaeOrUpdateArticle(tx *gorm.DB,article *Article,categoryname string,tagnames []string) error{
+func SvaeOrUpdateArticle(tx *gorm.DB, article *Article, categoryname string, tagnames []string) error {
 	// 如果没有这个分类，Create
-	return  tx.Transaction(func(db *gorm.DB) error{
-	
-		category := Category{Name : categoryname}
-		result := db.Model(&Category{}).Where("name",categoryname).FirstOrCreate(&category)
-		if result.Error != nil{
+	return tx.Transaction(func(db *gorm.DB) error {
+
+		category := Category{Name: categoryname}
+		result := db.Model(&Category{}).Where("name", categoryname).FirstOrCreate(&category)
+		if result.Error != nil {
 			return result.Error
 		}
-		article.CategoryId =category.ID
+		article.CategoryId = category.ID
 
-	// 新增或更新文章
-		if article.ID == 0{
+		// 新增或更新文章
+		if article.ID == 0 {
 			result = db.Create(&article)
-		}else{
-			result = db.Model(&article).Where("id",article.ID).Updates(article)
+		} else {
+			result = db.Model(&article).Where("id", article.ID).Updates(article)
 		}
-		if result.Error != nil{
+		if result.Error != nil {
 			return result.Error
 		}
 
-		// 更新文章后 文章对应的tag需要更新 维护关联表 
+		// 更新文章后 文章对应的tag需要更新 维护关联表
 		// 清空
-		result = db.Delete(&ArticleTag{},"article_id",article.ID)
-		if result.Error != nil{
+		result = db.Delete(&ArticleTag{}, "article_id", article.ID)
+		if result.Error != nil {
 			return result.Error
 		}
 
 		// 如果tag表中有没有这个tag，添加
 		var articletags []ArticleTag
-		for _,tagname := range tagnames {
+		for _, tagname := range tagnames {
 			newTag := Tag{Name: tagname}
-			result = db.Model(&Tag{}).Where("name",tagname).FirstOrCreate(&newTag)
-			if result.Error != nil{
+			result = db.Model(&Tag{}).Where("name", tagname).FirstOrCreate(&newTag)
+			if result.Error != nil {
 				return result.Error
 			}
 
 			articletags = append(articletags, ArticleTag{
 				ArticleId: article.ID,
-				TagId: newTag.ID,
+				TagId:     newTag.ID,
 			})
 		}
 		result = db.Create(&articletags)
@@ -296,13 +296,12 @@ func SvaeOrUpdateArticle(tx *gorm.DB,article *Article,categoryname string,tagnam
 	})
 }
 
-func UpdatearticleTop(db *gorm.DB,id int, Istop bool) error{
-	result := db.Model(&Article{Model : Model{ID: id}}).Update("is_top",Istop)
+func UpdatearticleTop(db *gorm.DB, id int, Istop bool) error {
+	result := db.Model(&Article{Model: Model{ID: id}}).Update("is_top", Istop)
 	return result.Error
 }
 
-
-func ImportArticle(db *gorm.DB, userAuthId int, title string, content string, img string ,categoryname string,tangname string) error {
+func ImportArticle(db *gorm.DB, userAuthId int, title string, content string, img string, categoryname string, tangname string) error {
 	article := Article{
 		Title:   title,
 		Content: content,
@@ -311,28 +310,28 @@ func ImportArticle(db *gorm.DB, userAuthId int, title string, content string, im
 		Type:    TYPE_ORIGINAL,
 		UserId:  userAuthId,
 	}
-	category := Category{Name : categoryname}
-	result := db.Model(&Category{}).Where("name",categoryname).FirstOrCreate(&category)
-	if result.Error != nil{
-			return result.Error
-		}
-		article.CategoryId =category.ID
-		
-	result = db.Create(&article)		
-	if result.Error!= nil{
+	category := Category{Name: categoryname}
+	result := db.Model(&Category{}).Where("name", categoryname).FirstOrCreate(&category)
+	if result.Error != nil {
+		return result.Error
+	}
+	article.CategoryId = category.ID
+
+	result = db.Create(&article)
+	if result.Error != nil {
 		return result.Error
 	}
 
 	var articletag ArticleTag
-	tag := Tag{Name: tangname}	
-	result = db.Model(&Tag{}).Where("name",tangname).FirstOrCreate(&tag)
-	if result.Error!= nil{
+	tag := Tag{Name: tangname}
+	result = db.Model(&Tag{}).Where("name", tangname).FirstOrCreate(&tag)
+	if result.Error != nil {
 		return result.Error
 	}
 
 	articletag.ArticleId = article.ID
 	articletag.TagId = tag.ID
 	result = db.Create(&articletag)
-	
+
 	return result.Error
 }

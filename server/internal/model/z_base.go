@@ -49,6 +49,7 @@ func MakeMigrate(db *gorm.DB) error {
 		&FriendLink{},   // 友链
 		&Page{},         // 页面
 		&Config{},       // 网站设置
+		&ResumeProfile{}, // 自我介绍贴纸与文案
 		&OperationLog{}, // 操作日志
 		&UserInfo{},     // 用户信息
 

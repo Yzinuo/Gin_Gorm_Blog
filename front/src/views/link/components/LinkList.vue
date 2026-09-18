@@ -1,5 +1,6 @@
 <script setup>
 import { convertImgUrl } from '@/utils'
+import { safeExternalUrl } from '@/utils/sanitize'
 
 defineProps({
   linkList: {
@@ -23,7 +24,7 @@ defineProps({
         v-for="link of linkList" :key="link.id"
         class="group link-wrapper relative col-span-3 rounded-8 transition-300 sm:col-span-1"
       >
-        <a :href="link.address" target="_blank" class="flex flex-row p-1 hover:text-white">
+        <a :href="safeExternalUrl(link.address)" target="_blank" rel="noopener noreferrer" class="flex flex-row p-1 hover:text-white">
           <!-- 头像 -->
           <div class="z-10 mr-5 w-[120px] f-c-c">
             <img :src="convertImgUrl(link.avatar)" class="w-[65px] rounded-full duration-600 group-hover:rotate-360">

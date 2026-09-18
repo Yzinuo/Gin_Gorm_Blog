@@ -12,6 +12,7 @@ import ResumeScene from './components/ResumeScene.vue'
 import cameraMap from './camera-map.json'
 import { content } from './content'
 import api from '@/api'
+import { sanitizeHtml } from '@/utils/sanitize'
 
 hljs.registerLanguage('go', go)
 hljs.registerLanguage('bash', bash)
@@ -24,11 +25,49 @@ const chapter = ref(0)
 const html = ref('')
 const textStatus = ref('loading')
 let disposed = false
-const entries = cameraMap.stickers.map((sticker, index) => ({ ...sticker, ...content[index] }))
-const active = computed(() => entries[chapter.value - 1])
+const profile = ref([])
+const entries = computed(() => cameraMap.stickers.map((sticker, index) => {
+  const saved = profile.value.find(item => item.id === index + 1)
+  return { ...sticker, ...content[index], ...saved, image: saved?.image || '', originalImage: sticker.image }
+}))
+const active = computed(() => entries.value[chapter.value - 1])
 const caption = computed(() => active.value?.title || (chapter.value === 9 ? '下一章，待续。' : '每段经历，\n都有自己的坐标。'))
 const chapterLabel = computed(() => active.value?.category || (chapter.value === 9 ? 'THE NEXT CHAPTER' : 'INTRODUCTION'))
 const base = import.meta.env.BASE_URL
+const resumeStatus = ref('loading')
+
+function stickerURL(entry) {
+  if (!entry.image)
+    return `${base}resume/${entry.originalImage}`
+  if (/^https?:\/\//i.test(entry.image))
+    return entry.image
+  return `${(import.meta.env.VITE_BACKEND_URL || '').replace(/\/$/, '')}/${entry.image.replace(/^\//, '')}`
+}
+
+const stickers = computed(() => entries.value.map(entry => ({ object: entry.object, image: entry.image ? stickerURL(entry) : '' })))
+
+function fallbackSticker(event, entry) {
+  const fallback = new URL(`${base}resume/${entry.originalImage}`, window.location.origin).href
+  if (event.target.src !== fallback)
+    event.target.src = fallback
+}
+
+async function loadResume() {
+  resumeStatus.value = 'loading'
+  try {
+    const { data } = await api.getResume()
+    if (!Array.isArray(data?.entries) || data.entries.length !== 8)
+      throw new Error('Invalid résumé configuration')
+    if (disposed)
+      return
+    profile.value = data.entries
+    resumeStatus.value = 'ready'
+  }
+  catch {
+    if (!disposed)
+      resumeStatus.value = 'error'
+  }
+}
 
 function explore(id) {
   const element = story.value?.querySelector(`#${id}`) || story.value?.querySelector('#next-chapter')
@@ -46,7 +85,7 @@ async function loadIntroduction() {
     const { data } = await api.about()
     if (disposed)
       return
-    html.value = await marked.parse(typeof data === 'string' ? data : '', { async: true })
+    html.value = sanitizeHtml(await marked.parse(typeof data === 'string' ? data : '', { async: true }))
     textStatus.value = 'ready'
     await nextTick()
     if (disposed)
@@ -60,12 +99,13 @@ async function loadIntroduction() {
   }
 }
 onMounted(loadIntroduction)
+onMounted(loadResume)
 onUnmounted(() => disposed = true)
 </script>
 
 <template>
   <main class="personal-atlas">
-    <ResumeScene ref="scene" :story="story" @chapter="chapter = $event">
+    <ResumeScene ref="scene" :story="story" :stickers="stickers" @chapter="chapter = $event">
       <div class="stage-caption" :class="{ compact: chapter !== 0 }">
         <span>{{ String(chapter).padStart(2, '0') }} / {{ chapterLabel }}</span>
         <h2>{{ caption }}</h2>
@@ -96,12 +136,16 @@ onUnmounted(() => disposed = true)
         </p>
         <a href="#entry-1" class="atlas-scroll-link" @click.prevent="explore('entry-1')">开始探索 <span aria-hidden="true">↓</span></a>
         <small>08 EXPERIENCES / 一段持续生长的旅程</small>
+        <p v-if="resumeStatus === 'error'" role="status">
+          最新经历暂未加载，正在展示默认介绍。
+          <button type="button" class="entry-focus" @click="loadResume">重新加载</button>
+        </p>
       </section>
       <section v-for="(entry, index) in entries" :id="`entry-${entry.index}`" :key="entry.index" class="story-section story-entry" :class="{ active: chapter === index + 1 }" :data-frame="entry.frame">
         <div class="entry-meta">
           <span class="entry-number">{{ String(entry.index).padStart(2, '0') }}</span><span>{{ entry.category }}</span>
         </div>
-        <img class="sticker-image" :src="`${base}resume/${entry.image}`" :alt="`${entry.title}贴纸`" width="180" height="140" loading="lazy">
+        <img class="sticker-image" :src="stickerURL(entry)" :alt="`${entry.title}贴纸`" width="180" height="140" loading="lazy" @error="fallbackSticker($event, entry)">
         <h2>{{ entry.title }}</h2>
         <p>{{ entry.description }}</p>
         <ul class="entry-tags" aria-label="经历标签">
@@ -246,6 +290,8 @@ onUnmounted(() => disposed = true)
   margin: 24px 0;
 }
 .story-section p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   font-size: 14px;
   line-height: 2;
   color: var(--text-muted);

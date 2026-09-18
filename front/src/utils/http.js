@@ -31,7 +31,9 @@ function requestSuccess(config) {
   if (config.needToken) {
     const { token } = useUserStore()
     if (!token) {
-      return Promise.reject(new axios.AxiosError('当前没有登录，请先登录！', 401))
+      const appStore = useAppStore()
+      appStore.setLoginFlag(true)
+      return Promise.reject(new axios.AxiosError('当前没有登录，请先登录！', 'ERR_UNAUTHORIZED'))
     }
     config.headers.Authorization = config.headers.Authorization || `Bearer ${token}`
   }
@@ -54,12 +56,12 @@ function responseSuccess(response) {
   const responseData = response.data
   const { code, message } = responseData
   if (code !== 0) { // 与后端约定业务状态码
-    if (code === 1203) {
-      // 移除 token
+    if ([1201, 1202, 1203, 1204, 1207].includes(code)) {
       const userStore = useUserStore()
       userStore.resetLoginState()
+      useAppStore().setLoginFlag(true)
     }
-    window.$message.error(message)
+    window.$message?.error(message)
     return Promise.reject(responseData)
   }
   return Promise.resolve(responseData)
@@ -71,8 +73,8 @@ function responseSuccess(response) {
  */
 function responseFail(error) {
   const { code, message } = error
-  if (code === 401) {
-    window.$message.error(message)
+  if (code === 'ERR_UNAUTHORIZED' || code === 401) {
+    window.$message?.error(message)
     // 移除 token
     const userStore = useUserStore()
     userStore.resetLoginState()

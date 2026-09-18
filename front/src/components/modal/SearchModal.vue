@@ -17,17 +17,33 @@ const searchFlag = computed({
 const keyword = ref('')
 // 搜索结果
 const articleList = ref([])
+let latestSearch = 0
 
 // 防抖 watch, 节流: throttledWatch
 debouncedWatch(
   keyword,
-  () => keyword.value ? handleSearch() : articleList.value = [],
+  () => {
+    if (keyword.value)
+      handleSearch()
+    else {
+      latestSearch++
+      articleList.value = []
+    }
+  },
   { debounce: 300 },
 )
 
 async function handleSearch() {
-  const resp = await api.searchArticles({ keyword: keyword.value })
-  articleList.value = resp.data
+  const sequence = ++latestSearch
+  try {
+    const resp = await api.searchArticles({ keyword: keyword.value })
+    if (sequence === latestSearch)
+      articleList.value = resp.data
+  }
+  catch {
+    if (sequence === latestSearch)
+      articleList.value = []
+  }
 }
 </script>
 
@@ -53,10 +69,10 @@ async function handleSearch() {
           <ul v-if="articleList.length">
             <li v-for="item of articleList" :key="item.id" class="text-sm">
               <RouterLink :to="`/article/${item.id}`">
-                <span class="border-b-1 border-line border-solid text-lg" @click="searchFlag = false" v-html="item.title" />
+                <span class="border-b-1 border-line border-solid text-lg" @click="searchFlag = false">{{ item.title }}</span>
               </RouterLink>
               <div class="ell-4 mt-1">
-                <p class="cursor-pointer text-muted" v-html="item.content" />
+                <p class="cursor-pointer text-muted">{{ item.content }}</p>
               </div>
               <hr class="my-3 border-1 border-line border-dashed">
             </li>
