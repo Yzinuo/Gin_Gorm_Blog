@@ -16,7 +16,7 @@ const isRightClass = computed(() => props.idx % 2 === 0
 </script>
 
 <template>
-  <div class="article-card group h-[430px] w-full flex flex-col animate-zoom-in animate-duration-700 items-center rounded-xl bg-surface shadow-md transition-600 md:h-[280px] md:flex-row hover:shadow-2xl">
+  <div class="group article-card h-[430px] w-full flex flex-col animate-zoom-in animate-duration-700 items-center rounded-xl bg-surface shadow-md transition-600 md:h-[280px] md:flex-row hover:shadow-2xl">
     <!-- 封面图 -->
     <div :class="isRightClass" class="h-[230px] w-full overflow-hidden md:h-full md:w-45/100">
       <RouterLink :to="`/article/${article.id}`">

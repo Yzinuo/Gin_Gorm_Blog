@@ -1,48 +1,96 @@
 package handle
 
 import (
+	"fmt"
 	g "gin-blog/internal/global"
 	"gin-blog/internal/utils/upload"
 	"github.com/gin-gonic/gin"
-	"path/filepath"
+	"net/http"
+	"os"
 	"strings"
+	"time"
 )
 
 type Upload struct{}
 
 const maxUploadSize = 10 << 20 // 10 MiB
 
-var allowedImageExtensions = map[string]struct{}{
-	".avif": {},
-	".gif":  {},
-	".jpeg": {},
-	".jpg":  {},
-	".png":  {},
-	".webp": {},
+var genericImageMIMEByExt = map[string]string{
+	".avif": "image/avif",
+	".gif":  "image/gif",
+	".jpeg": "image/jpeg",
+	".jpg":  "image/jpeg",
+	".png":  "image/png",
+	".webp": "image/webp",
 }
 
 func (*Upload) UploadFile(c *gin.Context) {
-	_, fileHeader, err := c.Request.FormFile("file")
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxUploadSize+(1<<20))
+	_, header, err := c.Request.FormFile("file")
 	if err != nil {
 		ReturnError(c, g.ErrFileReceive, err)
 		return
 	}
-	if fileHeader.Size <= 0 || fileHeader.Size > maxUploadSize {
-		ReturnError(c, g.ErrFileUpload, "仅支持上传不超过 10 MiB 的图片")
-		return
+	purpose := strings.ToLower(c.PostForm("purpose"))
+	if purpose == "" {
+		purpose = "article"
 	}
-	if _, ok := allowedImageExtensions[strings.ToLower(filepath.Ext(fileHeader.Filename))]; !ok {
-		ReturnError(c, g.ErrFileUpload, "仅支持 AVIF、GIF、JPEG、PNG、WebP 图片")
+	maxWidth := 1600
+	switch purpose {
+	case "article":
+	case "avatar":
+		maxWidth = 512
+	case "cover":
+		maxWidth = 1920
+	default:
+		ReturnError(c, g.ErrRequest, "purpose 必须为 article、avatar 或 cover")
 		return
 	}
 
-	// 文件存储接口
-	oss := upload.NewOSS()
-	filepath, _, err := oss.UploadFile(fileHeader)
+	file, err := spoolUpload(header, maxUploadSize, genericImageMIMEByExt)
 	if err != nil {
 		ReturnError(c, g.ErrFileUpload, err)
 		return
 	}
+	defer os.Remove(file.path)
+	store, err := upload.NewObjectStore()
+	if err != nil {
+		ReturnError(c, g.ErrFileUpload, err)
+		return
+	}
+	prefix := fmt.Sprintf("uploads/%s/%s/%s/%s", purpose, time.Now().Format("2006/01"), file.hash[:2], file.hash)
+	sourceKey := prefix + "/source" + file.ext
+	source, err := uploadPrepared(c, store, file, sourceKey, purpose+".source")
+	if err != nil {
+		ReturnError(c, g.ErrFileUpload, err)
+		return
+	}
+	publicURL := source.URL
 
-	ReturnSuccess(c, filepath)
+	// GIF animation and AVIF inputs are retained without lossy transcoding.
+	if file.mime != "image/gif" && file.mime != "image/avif" {
+		img, _, decodeErr := decodeImageFile(file)
+		if decodeErr != nil {
+			_ = store.Delete(c, sourceKey)
+			ReturnError(c, g.ErrFileUpload, decodeErr)
+			return
+		}
+		variant, encodeErr := encodeWebPVariant(img, maxWidth, 82)
+		if encodeErr != nil {
+			_ = store.Delete(c, sourceKey)
+			ReturnError(c, g.ErrFileUpload, encodeErr)
+			return
+		}
+		defer os.Remove(variant.path)
+		deliveryKey := fmt.Sprintf("%s/delivery-v1-%d.webp", prefix, variant.width)
+		delivery, uploadErr := uploadPrepared(c, store, variant, deliveryKey, purpose+".delivery")
+		if uploadErr != nil {
+			_ = store.Delete(c, sourceKey)
+			ReturnError(c, g.ErrFileUpload, uploadErr)
+			return
+		}
+		publicURL = delivery.URL
+	}
+
+	ReturnSuccess(c, publicURL)
 }

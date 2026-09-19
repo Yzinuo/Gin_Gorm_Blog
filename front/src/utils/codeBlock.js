@@ -48,7 +48,7 @@ export function enhanceCodeBlocks(container) {
     const copyBtn = header.querySelector('.code-copy-btn')
     copyBtn.addEventListener('click', async () => {
       try {
-        await navigator.clipboard.writeText(code.innerText)
+        await navigator.clipboard.writeText(code.textContent)
         copyBtn.classList.add('copied')
         const textEl = copyBtn.querySelector('.copy-text')
         const iconEl = copyBtn.querySelector('.copy-icon')

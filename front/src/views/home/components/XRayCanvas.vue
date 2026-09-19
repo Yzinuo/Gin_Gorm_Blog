@@ -1,55 +1,45 @@
-<template>
-  <div
-    ref="containerRef"
-    class="xray-canvas-container"
-    @mousemove="handleMouseMove"
-    @mouseenter="handleMouseEnter"
-    @mouseleave="handleMouseLeave"
-  >
-    <canvas ref="canvasRef" class="xray-canvas" :class="{ 'is-unavailable': hasError }" aria-label="随鼠标移动显示透视光效的博客封面"></canvas>
-    
-    <!-- 加载中指示器 (初始资源较大时优雅过渡) -->
-    <Transition name="fade">
-      <div v-if="!isReady && !hasError" class="loading-overlay">
-        <div class="cyber-spinner"></div>
-        <span class="loading-text">封面加载中…</span>
-      </div>
-    </Transition>
-  </div>
-</template>
-
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-const containerRef = ref(null);
-const canvasRef = ref(null);
-const isReady = ref(false);
-const hasError = ref(false);
-let disposed = false;
-const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-let positionBuffer = null;
-let isVisible = true;
-let intersectionObserver = null;
+const props = defineProps({ asset: { type: Object, default: null } })
+
+const containerRef = ref(null)
+const canvasRef = ref(null)
+const isReady = ref(false)
+const hasError = ref(false)
+let disposed = false
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches
+const connection = navigator.connection
+const constrainedNetwork = connection?.saveData || ['slow-2g', '2g', '3g'].includes(connection?.effectiveType)
+const canAutoEnhance = !reducedMotion && !constrainedNetwork && !matchMedia('(max-width: 640px)').matches
+const beforeURL = computed(() => props.asset?.before?.src || '/images/Before-1672.webp')
+const afterURL = computed(() => props.asset?.after?.src || '/images/After-1672.webp')
+const beforeSrcset = computed(() => {
+  const variants = props.asset?.before?.srcset || [{ src: '/images/Before-960.webp', width: 960 }, { src: '/images/Before-1672.webp', width: 1672 }]
+  return variants.map(item => `${item.src} ${item.width}w`).join(', ')
+})
+let positionBuffer = null
+let isVisible = true
+let intersectionObserver = null
+const hasStarted = ref(false)
 
 // 配置参数
 const CONFIG = {
-  imgBeforeUrl: '/images/Before.png',
-  imgAfterUrl: '/images/After.png',
   imgWidth: 1672,
   imgHeight: 941,
-  baseRadius: 180,       // 基础透视半径 (px)
+  baseRadius: 180, // 基础透视半径 (px)
   maxStretchRadius: 260, // 运动时最大拉伸半径
-  lerpFactor: 0.1,       // 惯性平滑度 (越小越柔和流体感越强)
-  rimWidthRatio: 0.055,  // 边缘光圈宽度比例
+  lerpFactor: 0.1, // 惯性平滑度 (越小越柔和流体感越强)
+  rimWidthRatio: 0.055, // 边缘光圈宽度比例
   rimColor: [1.0, 0.18, 0.18], // 霓虹激光红
   rimGlowIntensity: 1.8,
-};
+}
 
-let gl = null;
-let program = null;
-let textureBefore = null;
-let textureAfter = null;
-let animationFrameId = null;
+let gl = null
+let program = null
+let textureBefore = null
+let textureAfter = null
+let animationFrameId = null
 
 // 物理状态追踪
 const state = {
@@ -64,12 +54,12 @@ const state = {
   speed: 0,
   currentRadius: CONFIG.baseRadius,
   targetRadius: CONFIG.baseRadius,
-  hoverFactor: 0.0,   // 0: 完全淡出, 1: 完全显现
+  hoverFactor: 0.0, // 0: 完全淡出, 1: 完全显现
   targetHover: 0.0,
   hasInitialMoved: false,
   startTime: performance.now(),
   lastFrameTime: performance.now(),
-};
+}
 
 // 顶点着色器
 const VS_SOURCE = `
@@ -82,7 +72,7 @@ void main() {
   v_uv.y = 1.0 - v_uv.y;
   gl_Position = vec4(a_position, 0.0, 1.0);
 }
-`;
+`
 
 // 片段着色器 (核心液态 X-Ray 渲染器)
 const FS_SOURCE = `
@@ -183,305 +173,377 @@ void main() {
 
   gl_FragColor = vec4(blended, 1.0);
 }
-`;
+`
 
 function createShader(gl, type, source) {
-  const shader = gl.createShader(type);
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
+  const shader = gl.createShader(type)
+  gl.shaderSource(shader, source)
+  gl.compileShader(shader)
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    console.error('Shader compile error:', gl.getShaderInfoLog(shader));
-    gl.deleteShader(shader);
-    return null;
+    console.error('Shader compile error:', gl.getShaderInfoLog(shader))
+    gl.deleteShader(shader)
+    return null
   }
-  return shader;
+  return shader
 }
 
 function initGL() {
-  const canvas = canvasRef.value;
-  if (!canvas) return false;
+  const canvas = canvasRef.value
+  if (!canvas)
+    return false
 
   gl = canvas.getContext('webgl', {
     antialias: true,
     alpha: false,
-    powerPreference: 'high-performance'
-  });
+    powerPreference: 'high-performance',
+  })
 
   if (!gl) {
-    console.error('WebGL not supported');
-    return false;
+    console.error('WebGL not supported')
+    return false
   }
 
-  const vs = createShader(gl, gl.VERTEX_SHADER, VS_SOURCE);
-  const fs = createShader(gl, gl.FRAGMENT_SHADER, FS_SOURCE);
-  if (!vs || !fs) return false;
+  const vs = createShader(gl, gl.VERTEX_SHADER, VS_SOURCE)
+  const fs = createShader(gl, gl.FRAGMENT_SHADER, FS_SOURCE)
+  if (!vs || !fs)
+    return false
 
-  program = gl.createProgram();
-  gl.attachShader(program, vs);
-  gl.attachShader(program, fs);
-  gl.linkProgram(program);
+  program = gl.createProgram()
+  gl.attachShader(program, vs)
+  gl.attachShader(program, fs)
+  gl.linkProgram(program)
 
   if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    console.error('Program link error:', gl.getProgramInfoLog(program));
-    return false;
+    console.error('Program link error:', gl.getProgramInfoLog(program))
+    return false
   }
 
-  gl.useProgram(program);
+  gl.useProgram(program)
 
   // 全屏四边形顶点数据
-  gl.deleteShader(vs);
-  gl.deleteShader(fs);
-  positionBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+  gl.deleteShader(vs)
+  gl.deleteShader(fs)
+  positionBuffer = gl.createBuffer()
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer)
   gl.bufferData(
     gl.ARRAY_BUFFER,
     new Float32Array([
-      -1, -1,
-       1, -1,
-      -1,  1,
-      -1,  1,
-       1, -1,
-       1,  1,
+      -1,
+      -1,
+      1,
+      -1,
+      -1,
+      1,
+      -1,
+      1,
+      1,
+      -1,
+      1,
+      1,
     ]),
-    gl.STATIC_DRAW
-  );
+    gl.STATIC_DRAW,
+  )
 
-  const posLoc = gl.getAttribLocation(program, 'a_position');
-  gl.enableVertexAttribArray(posLoc);
-  gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+  const posLoc = gl.getAttribLocation(program, 'a_position')
+  gl.enableVertexAttribArray(posLoc)
+  gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0)
 
-  return true;
+  return true
 }
 
 function loadTexture(gl, url) {
   return new Promise((resolve, reject) => {
-    const texture = gl.createTexture();
-    const image = new Image();
-    image.crossOrigin = 'anonymous';
+    const texture = gl.createTexture()
+    const image = new Image()
+    image.crossOrigin = 'anonymous'
     image.onload = () => {
-      if (disposed) { gl.deleteTexture(texture); reject(new Error('Page disposed')); return; }
-      gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+      if (disposed) {
+        gl.deleteTexture(texture)
+        reject(new Error('Page disposed'))
+        return
+      }
+      gl.bindTexture(gl.TEXTURE_2D, texture)
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false)
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image)
 
       // 设置滤波
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
 
-      resolve(texture);
-    };
-    image.onerror = (e) => { gl.deleteTexture(texture); reject(e); };
-    image.src = url;
-  });
+      resolve(texture)
+    }
+    image.onerror = (e) => {
+      gl.deleteTexture(texture)
+      reject(e)
+    }
+    image.src = url
+  })
 }
 
 function resizeCanvas() {
-  const container = containerRef.value;
-  const canvas = canvasRef.value;
-  if (!container || !canvas || !gl) return;
+  const container = containerRef.value
+  const canvas = canvasRef.value
+  if (!container || !canvas || !gl)
+    return
 
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const width = container.clientWidth;
-  const height = container.clientHeight;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2)
+  const width = container.clientWidth
+  const height = container.clientHeight
 
   if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    gl.viewport(0, 0, canvas.width, canvas.height);
+    canvas.width = width * dpr
+    canvas.height = height * dpr
+    gl.viewport(0, 0, canvas.width, canvas.height)
   }
 }
 
 function render() {
-  if (disposed) return;
+  if (disposed)
+    return
   if (!isVisible || document.hidden) {
-    animationFrameId = requestAnimationFrame(render);
-    return;
+    animationFrameId = requestAnimationFrame(render)
+    return
   }
   if (!gl || !program || !isReady.value) {
-    animationFrameId = requestAnimationFrame(render);
-    return;
+    animationFrameId = requestAnimationFrame(render)
+    return
   }
 
-  const now = performance.now();
-  const dt = Math.min((now - state.lastFrameTime) / 1000, 0.1);
-  state.lastFrameTime = now;
-  const elapsed = reducedMotion ? 0 : (now - state.startTime) / 1000;
+  const now = performance.now()
+  state.lastFrameTime = now
+  const elapsed = reducedMotion ? 0 : (now - state.startTime) / 1000
 
-  const canvas = canvasRef.value;
-  const width = canvas.width;
-  const height = canvas.height;
+  const canvas = canvasRef.value
+  const width = canvas.width
+  const height = canvas.height
 
   // 1. 物理位置插值 (Lerp)
-  state.currentX += (state.targetX - state.currentX) * CONFIG.lerpFactor;
-  state.currentY += (state.targetY - state.currentY) * CONFIG.lerpFactor;
+  state.currentX += (state.targetX - state.currentX) * CONFIG.lerpFactor
+  state.currentY += (state.targetY - state.currentY) * CONFIG.lerpFactor
 
   // 2. 速度与形变计算
-  const dx = state.currentX - state.prevX;
-  const dy = state.currentY - state.prevY;
-  state.prevX = state.currentX;
-  state.prevY = state.currentY;
+  const dx = state.currentX - state.prevX
+  const dy = state.currentY - state.prevY
+  state.prevX = state.currentX
+  state.prevY = state.currentY
 
   // 速度矢量做平滑衰减
-  state.velocityX += (dx - state.velocityX) * 0.25;
-  state.velocityY += (dy - state.velocityY) * 0.25;
-  const rawSpeed = Math.sqrt(state.velocityX * state.velocityX + state.velocityY * state.velocityY);
-  state.speed += (rawSpeed - state.speed) * 0.2;
+  state.velocityX += (dx - state.velocityX) * 0.25
+  state.velocityY += (dy - state.velocityY) * 0.25
+  const rawSpeed = Math.sqrt(state.velocityX * state.velocityX + state.velocityY * state.velocityY)
+  state.speed += (rawSpeed - state.speed) * 0.2
 
   // 3. 动态探针半径计算 (运动速度越快，光斑适当扩充)
-  const speedExpand = Math.min(state.speed * 3.5, CONFIG.maxStretchRadius - CONFIG.baseRadius);
-  const targetRad = CONFIG.baseRadius + speedExpand;
-  state.currentRadius += (targetRad - state.currentRadius) * 0.15;
+  const speedExpand = Math.min(state.speed * 3.5, CONFIG.maxStretchRadius - CONFIG.baseRadius)
+  const targetRad = CONFIG.baseRadius + speedExpand
+  state.currentRadius += (targetRad - state.currentRadius) * 0.15
 
   // 4. 显隐渐变因子 (Hover / Exit)
-  state.hoverFactor += (state.targetHover - state.hoverFactor) * 0.08;
+  state.hoverFactor += (state.targetHover - state.hoverFactor) * 0.08
 
   // 5. 闲置微呼吸 (Idle Breathing)
-  let activeRadius = state.currentRadius;
+  let activeRadius = state.currentRadius
   if (state.speed < 0.5) {
-    activeRadius += Math.sin(elapsed * 2.2) * 8.0;
+    activeRadius += Math.sin(elapsed * 2.2) * 8.0
   }
 
-  gl.useProgram(program);
+  gl.useProgram(program)
 
   // 设置 Uniform 变量
-  const uRes = gl.getUniformLocation(program, 'u_resolution');
-  const uImgRes = gl.getUniformLocation(program, 'u_imageResolution');
-  const uMouse = gl.getUniformLocation(program, 'u_mouse');
-  const uVel = gl.getUniformLocation(program, 'u_velocity');
-  const uRad = gl.getUniformLocation(program, 'u_radius');
-  const uTime = gl.getUniformLocation(program, 'u_time');
-  const uHov = gl.getUniformLocation(program, 'u_hover');
+  const uRes = gl.getUniformLocation(program, 'u_resolution')
+  const uImgRes = gl.getUniformLocation(program, 'u_imageResolution')
+  const uMouse = gl.getUniformLocation(program, 'u_mouse')
+  const uVel = gl.getUniformLocation(program, 'u_velocity')
+  const uRad = gl.getUniformLocation(program, 'u_radius')
+  const uTime = gl.getUniformLocation(program, 'u_time')
+  const uHov = gl.getUniformLocation(program, 'u_hover')
 
-  gl.uniform2f(uRes, width, height);
-  gl.uniform2f(uImgRes, CONFIG.imgWidth, CONFIG.imgHeight);
+  gl.uniform2f(uRes, width, height)
+  gl.uniform2f(uImgRes, CONFIG.imgWidth, CONFIG.imgHeight)
   // 传入归一化的物理坐标
-  gl.uniform2f(uMouse, state.currentX / width, state.currentY / height);
-  gl.uniform2f(uVel, state.velocityX, state.velocityY);
+  gl.uniform2f(uMouse, state.currentX / width, state.currentY / height)
+  gl.uniform2f(uVel, state.velocityX, state.velocityY)
   // 半径按 DPR 适配像素
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  gl.uniform1f(uRad, activeRadius * dpr);
-  gl.uniform1f(uTime, elapsed);
-  gl.uniform1f(uHov, state.hoverFactor);
+  const dpr = Math.min(window.devicePixelRatio || 1, 2)
+  gl.uniform1f(uRad, activeRadius * dpr)
+  gl.uniform1f(uTime, elapsed)
+  gl.uniform1f(uHov, state.hoverFactor)
 
   // 绑定纹理
-  const uTexBeforeLoc = gl.getUniformLocation(program, 'u_texBefore');
-  const uTexAfterLoc = gl.getUniformLocation(program, 'u_texAfter');
+  const uTexBeforeLoc = gl.getUniformLocation(program, 'u_texBefore')
+  const uTexAfterLoc = gl.getUniformLocation(program, 'u_texAfter')
 
-  gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, textureBefore);
-  gl.uniform1i(uTexBeforeLoc, 0);
+  gl.activeTexture(gl.TEXTURE0)
+  gl.bindTexture(gl.TEXTURE_2D, textureBefore)
+  gl.uniform1i(uTexBeforeLoc, 0)
 
-  gl.activeTexture(gl.TEXTURE1);
-  gl.bindTexture(gl.TEXTURE_2D, textureAfter);
-  gl.uniform1i(uTexAfterLoc, 1);
+  gl.activeTexture(gl.TEXTURE1)
+  gl.bindTexture(gl.TEXTURE_2D, textureAfter)
+  gl.uniform1i(uTexAfterLoc, 1)
 
-  gl.drawArrays(gl.TRIANGLES, 0, 6);
+  gl.drawArrays(gl.TRIANGLES, 0, 6)
 
-  if (!reducedMotion) animationFrameId = requestAnimationFrame(render);
+  if (!reducedMotion)
+    animationFrameId = requestAnimationFrame(render)
 }
 
 // 鼠标交互事件
 function handleMouseMove(e) {
-  if (reducedMotion) return;
-  const container = containerRef.value;
-  if (!container) return;
+  if (reducedMotion)
+    return
+  const container = containerRef.value
+  if (!container)
+    return
 
-  const rect = container.getBoundingClientRect();
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const clientX = e.clientX - rect.left;
-  const clientY = e.clientY - rect.top;
+  const rect = container.getBoundingClientRect()
+  const dpr = Math.min(window.devicePixelRatio || 1, 2)
+  const clientX = e.clientX - rect.left
+  const clientY = e.clientY - rect.top
 
-  state.targetX = clientX * dpr;
-  state.targetY = clientY * dpr;
-  state.targetHover = 1.0;
+  state.targetX = clientX * dpr
+  state.targetY = clientY * dpr
+  state.targetHover = 1.0
 
   if (!state.hasInitialMoved) {
-    state.hasInitialMoved = true;
-    state.currentX = state.targetX;
-    state.currentY = state.targetY;
-    state.prevX = state.targetX;
-    state.prevY = state.targetY;
+    state.hasInitialMoved = true
+    state.currentX = state.targetX
+    state.currentY = state.targetY
+    state.prevX = state.targetX
+    state.prevY = state.targetY
   }
 }
 
 function handleMouseEnter() {
-  state.targetHover = 1.0;
+  state.targetHover = 1.0
 }
 
 function handleMouseLeave() {
   // 鼠标移出时，光圈优雅淡出
-  state.targetHover = 0.0;
+  state.targetHover = 0.0
 }
 
-let resizeObserver = null;
+let resizeObserver = null
 
-onMounted(async () => {
-  if (!initGL()) { hasError.value = true; return; }
-  intersectionObserver = new IntersectionObserver(([entry]) => { isVisible = entry.isIntersecting; });
-  intersectionObserver.observe(containerRef.value);
-
-  resizeCanvas();
+async function startEnhancement() {
+  if (hasStarted.value || disposed || reducedMotion)
+    return
+  hasStarted.value = true
+  if (!initGL()) {
+    hasError.value = true
+    return
+  }
+  resizeCanvas()
 
   // 初始将探针预置在右侧人物肩膀/背部核心区域，呼吸待命
-  const canvas = canvasRef.value;
-  state.targetX = canvas.width * 0.58;
-  state.targetY = canvas.height * 0.46;
-  state.currentX = state.targetX;
-  state.currentY = state.targetY;
-  state.prevX = state.targetX;
-  state.prevY = state.targetY;
-  state.targetHover = 0.85; // 页面加载后默认显露一处 X-Ray 唤起好奇心
-  if (reducedMotion) state.hoverFactor = 0.85;
+  const canvas = canvasRef.value
+  state.targetX = canvas.width * 0.58
+  state.targetY = canvas.height * 0.46
+  state.currentX = state.targetX
+  state.currentY = state.targetY
+  state.prevX = state.targetX
+  state.prevY = state.targetY
+  state.targetHover = 0.85 // 页面加载后默认显露一处 X-Ray 唤起好奇心
+  if (reducedMotion)
+    state.hoverFactor = 0.85
 
   // 监听容器尺寸调整
   resizeObserver = new ResizeObserver(() => {
-    resizeCanvas();
-    if (reducedMotion && isReady.value) render();
-  });
+    resizeCanvas()
+    if (reducedMotion && isReady.value)
+      render()
+  })
   if (containerRef.value) {
-    resizeObserver.observe(containerRef.value);
+    resizeObserver.observe(containerRef.value)
   }
 
   // 加载双图纹理
   try {
     const [tBefore, tAfter] = await Promise.all([
-      loadTexture(gl, CONFIG.imgBeforeUrl),
-      loadTexture(gl, CONFIG.imgAfterUrl),
-    ]);
-    if (disposed) { gl.deleteTexture(tBefore); gl.deleteTexture(tAfter); return; }
-    textureBefore = tBefore;
-    textureAfter = tAfter;
-    isReady.value = true;
-  } catch (err) {
-    if (disposed) return;
-    hasError.value = true;
-    console.error('Failed to load X-Ray textures:', err);
-    return;
+      loadTexture(gl, beforeURL.value),
+      loadTexture(gl, afterURL.value),
+    ])
+    if (disposed) {
+      gl.deleteTexture(tBefore)
+      gl.deleteTexture(tAfter)
+      return
+    }
+    textureBefore = tBefore
+    textureAfter = tAfter
+    isReady.value = true
+  }
+  catch (err) {
+    if (disposed)
+      return
+    hasError.value = true
+    console.error('Failed to load X-Ray textures:', err)
+    return
   }
 
-  animationFrameId = requestAnimationFrame(render);
-});
+  animationFrameId = requestAnimationFrame(render)
+}
+
+onMounted(() => {
+  intersectionObserver = new IntersectionObserver(([entry]) => {
+    isVisible = entry.isIntersecting
+    if (entry.isIntersecting && canAutoEnhance && !hasStarted.value) {
+      const schedule = window.requestIdleCallback || (callback => setTimeout(callback, 1200))
+      schedule(() => startEnhancement(), { timeout: 4000 })
+    }
+  })
+  intersectionObserver.observe(containerRef.value)
+})
 
 onUnmounted(() => {
-  disposed = true;
-  intersectionObserver?.disconnect();
+  disposed = true
+  intersectionObserver?.disconnect()
   if (animationFrameId) {
-    cancelAnimationFrame(animationFrameId);
+    cancelAnimationFrame(animationFrameId)
   }
   if (resizeObserver) {
-    resizeObserver.disconnect();
+    resizeObserver.disconnect()
   }
   if (gl) {
-    if (textureBefore) gl.deleteTexture(textureBefore);
-    if (textureAfter) gl.deleteTexture(textureAfter);
-    if (program) gl.deleteProgram(program);
-    if (positionBuffer) gl.deleteBuffer(positionBuffer);
-    gl.getExtension('WEBGL_lose_context')?.loseContext();
+    if (textureBefore)
+      gl.deleteTexture(textureBefore)
+    if (textureAfter)
+      gl.deleteTexture(textureAfter)
+    if (program)
+      gl.deleteProgram(program)
+    if (positionBuffer)
+      gl.deleteBuffer(positionBuffer)
+    gl.getExtension('WEBGL_lose_context')?.loseContext()
   }
-});
+})
 </script>
+
+<template>
+  <div
+    ref="containerRef"
+    class="xray-canvas-container"
+    @mousemove="handleMouseMove"
+    @mouseenter="handleMouseEnter"
+    @mouseleave="handleMouseLeave"
+  >
+    <picture class="xray-fallback">
+      <source v-if="beforeSrcset" :srcset="beforeSrcset" sizes="100vw" type="image/webp">
+      <img :src="beforeURL" alt="博客封面" width="1672" height="941" fetchpriority="high">
+    </picture>
+    <canvas ref="canvasRef" class="xray-canvas" :class="{ 'is-unavailable': hasError }" aria-label="随鼠标移动显示透视光效的博客封面" />
+
+    <!-- 加载中指示器 (初始资源较大时优雅过渡) -->
+    <Transition name="fade">
+      <div v-if="hasStarted && !isReady && !hasError" class="loading-overlay">
+        <div class="cyber-spinner" />
+        <span class="loading-text">封面加载中…</span>
+      </div>
+    </Transition>
+    <button v-if="!canAutoEnhance && !hasStarted && !hasError && !reducedMotion" type="button" class="enable-xray" @click="startEnhancement">
+      启用 X-Ray 互动效果
+    </button>
+  </div>
+</template>
 
 <style scoped>
 .xray-canvas-container {
@@ -490,16 +552,21 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: var(--bg-stage) url('/images/Before.png') center / cover no-repeat;
+  background: var(--bg-stage);
   cursor: crosshair;
   z-index: 1;
 }
 
+.xray-fallback { position: absolute; inset: 0; display: block; }
+.xray-fallback img { width: 100%; height: 100%; display: block; object-fit: cover; }
+
 .xray-canvas {
+  position: relative;
   width: 100%;
   height: 100%;
   display: block;
 }
+.enable-xray { position: absolute; right: 18px; bottom: 18px; z-index: 12; padding: 10px 14px; color: #fff; border: 1px solid #ffffff55; background: #171114cc; border-radius: 6px; }
 .xray-canvas.is-unavailable { visibility: hidden; }
 
 .loading-overlay {

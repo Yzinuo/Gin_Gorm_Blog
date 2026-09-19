@@ -11,7 +11,7 @@ const { blogConfig, viewCount } = storeToRefs(useAppStore())
 // 每秒刷新时间
 const runTime = ref('加载中...')
 
-const formatRuntime = (seconds) => {
+function formatRuntime(seconds) {
   if (!Number.isFinite(seconds) || seconds < 0) {
     return '0 天 0 时 0 分'
   }
@@ -21,7 +21,7 @@ const formatRuntime = (seconds) => {
   return `${days} 天 ${hours} 时 ${minutes} 分`
 }
 
-const getRuntimeSeconds = () => {
+function getRuntimeSeconds() {
   const config = blogConfig.value || {}
   if (config.website_createtime_unix) {
     const unix = Number.parseInt(config.website_createtime_unix, 10)
@@ -40,7 +40,7 @@ const getRuntimeSeconds = () => {
   return 0
 }
 
-const refreshRuntime = () => {
+function refreshRuntime() {
   runTime.value = formatRuntime(getRuntimeSeconds())
 }
 
@@ -50,7 +50,7 @@ watch(
   () => {
     refreshRuntime()
   },
-  { immediate: true }
+  { immediate: true },
 )
 
 // 每 30 秒刷新当前时间

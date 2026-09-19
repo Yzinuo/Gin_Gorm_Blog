@@ -1,0 +1,9 @@
+**/node_modules
+**/dist
+**/.pnpm-store
+**/.env
+**/.env.*
+**/pnpm-workspace.yaml
+.git
+deploy/start/server.crt
+deploy/start/server.key

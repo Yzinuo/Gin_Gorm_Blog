@@ -70,6 +70,10 @@ export default {
   getResume: () => request.get('/setting/about', { params: { view: 'resume' } }),
   updateResume: data => request.put('/setting/about?view=resume', data),
   updateAbout: data => request.put('/setting/about', data),
+  getAssetVersions: key => request.get(`/asset/${key}/versions`),
+  createAssetVersion: (key, data, onUploadProgress) => request.post(`/asset/${key}/versions`, data, { timeout: 120000, onUploadProgress }),
+  publishAssetVersion: (key, id) => request.post(`/asset/${key}/versions/${id}/publish`),
+  deleteAssetVersion: (key, id) => request.delete(`/asset/${key}/versions/${id}`),
 
   // 权限管理相关接口
   // 菜单

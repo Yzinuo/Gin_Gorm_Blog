@@ -14,6 +14,7 @@ export default {
   getPageList: () => request.get('/page'),
   /** 首页数据 */
   getHomeData: () => request.get('/home'),
+  getAssets: scope => request.get('/assets', { params: { scope } }),
   /** 首页文章列表 */
   getArticles: params => request.get('/article/list', { params }),
   /** 文章详情 */

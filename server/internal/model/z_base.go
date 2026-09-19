@@ -1,34 +1,34 @@
 package model
 
-import(
+import (
 	"gorm.io/gorm"
 	"time"
 )
 
-type Model struct{
-	ID			int 		`gorm:"primary_key;auto_increament" json:"id"`
-	CreatedAt 	time.Time	`json:"created_at"`
-	UpdatedAt	time.Time	`json:"updated_at"`
+type Model struct {
+	ID        int       `gorm:"primary_key;auto_increament" json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type OptionVO struct {
-	ID			string		`json:"id"`
-	Name		string 		`json:"label"`
+	ID   string `json:"id"`
+	Name string `json:"label"`
 }
 
 // 返回一个闭包函数，因为闭包函数能实现延迟调用（能契合查询时的顺序要求），动态生成函数
-func Paginate(page, size int) func(db *gorm.DB) *gorm.DB{
-	return func (db *gorm.DB) *gorm.DB{
-		if page <=0{
+func Paginate(page, size int) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if page <= 0 {
 			page = 1
 		}
 		switch {
-		case  size >= 100:
-			size = 100	
-		case  size <= 10 : 
+		case size >= 100:
+			size = 100
+		case size <= 10:
 			size = 10
 		}
-		offset := (page - 1) *size
+		offset := (page - 1) * size
 		return db.Offset(offset).Limit(size)
 	}
 }
@@ -41,15 +41,17 @@ func MakeMigrate(db *gorm.DB) error {
 	db.SetupJoinTable(&UserAuth{}, "Roles", &UserAuthRole{})
 
 	return db.AutoMigrate(
-		&Article{},      // 文章
-		&Category{},     // 分类
-		&Tag{},          // 标签
-		&Comment{},      // 评论
-		&Message{},      // 消息
-		&FriendLink{},   // 友链
-		&Page{},         // 页面
-		&Config{},       // 网站设置
+		&Article{},       // 文章
+		&Category{},      // 分类
+		&Tag{},           // 标签
+		&Comment{},       // 评论
+		&Message{},       // 消息
+		&FriendLink{},    // 友链
+		&Page{},          // 页面
+		&Config{},        // 网站设置
 		&ResumeProfile{}, // 自我介绍贴纸与文案
+		&ManagedAsset{},
+		&ManagedAssetVersion{},
 		&OperationLog{}, // 操作日志
 		&UserInfo{},     // 用户信息
 
@@ -64,28 +66,27 @@ func MakeMigrate(db *gorm.DB) error {
 }
 
 // 使用泛型定义通用接口
-func List [T any] (db *gorm.DB,data T,slt,order string,qurry string,arg ...any)(T,error){
-			db = db.Model(data).Select(slt).Order(order)
+func List[T any](db *gorm.DB, data T, slt, order string, qurry string, arg ...any) (T, error) {
+	db = db.Model(data).Select(slt).Order(order)
 
-			if qurry != ""{
-				db = db.Where(qurry,arg...)
-			}
+	if qurry != "" {
+		db = db.Where(qurry, arg...)
+	}
 
-			result := db.Find(&data)
+	result := db.Find(&data)
 
-			if result.Error != nil{
-				return data,result.Error
-			}
-			return data,nil
+	if result.Error != nil {
+		return data, result.Error
+	}
+	return data, nil
 }
 
+func Count[T any](db *gorm.DB, data T, where ...any) (int, error) {
+	if len(where) > 0 {
+		db = db.Where(where[0], where[1:]...)
+	}
 
-func Count [T any] (db *gorm.DB,data T,where ...any)(int,error){
-		if len(where) > 0 {
-			db = db.Where(where[0], where[1:]...)
-		}
-
-		var total int64
-		result := db.Model(data).Count(&total)
-		return int(total),result.Error
+	var total int64
+	result := db.Model(data).Count(&total)
+	return int(total), result.Error
 }

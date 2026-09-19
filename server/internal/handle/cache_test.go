@@ -3,7 +3,6 @@ package handle
 import (
 	"context"
 	"gin-blog/internal/model"
-	"log"
 	"testing"
 
 	"github.com/go-redis/redis/v9"
@@ -11,7 +10,8 @@ import (
 )
 
 // 需要 Redis 环境
-func initRdb() *redis.Client {
+func initRdb(t *testing.T) *redis.Client {
+	t.Helper()
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
 		Password: "",
@@ -20,14 +20,16 @@ func initRdb() *redis.Client {
 
 	_, err := rdb.Ping(context.Background()).Result()
 	if err != nil {
-		log.Fatal("Redis 连接失败: ", err)
+		rdb.Close()
+		t.Skipf("Redis integration test skipped: %v", err)
 	}
+	t.Cleanup(func() { rdb.Close() })
 
 	return rdb
 }
 
 func TestPageCache(t *testing.T) {
-	rdb := initRdb()
+	rdb := initRdb(t)
 
 	pages := []model.Page{
 		{Name: "page1"},
@@ -66,7 +68,7 @@ func TestPageCache(t *testing.T) {
 }
 
 func TestConfigCache(t *testing.T) {
-	rdb := initRdb()
+	rdb := initRdb(t)
 
 	config := map[string]string{
 		"name": "name",

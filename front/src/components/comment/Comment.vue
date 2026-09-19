@@ -323,7 +323,9 @@ const isLike = computed(() => id => userStore.commentLikeSet.includes(id))
     </div>
     <!-- 没有评论的提示 -->
     <div v-else-if="loadError" class="mb-10 mt-30 text-center text-zinc" role="status">
-      评论暂时无法加载。<button class="ml-2 color-brand" @click="reloadComments">重新加载</button>
+      评论暂时无法加载。<button class="ml-2 color-brand" @click="reloadComments">
+        重新加载
+      </button>
     </div>
     <div v-else class="mb-10 mt-30 text-center text-zinc">
       暂无评论，来发评论吧~

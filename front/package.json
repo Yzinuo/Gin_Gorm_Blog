@@ -28,6 +28,7 @@
     "@iconify/json": "^2.2.155",
     "@iconify/vue": "^4.1.1",
     "@unocss/eslint-config": "^0.58.0",
+    "@unocss/eslint-plugin": "^0.58.0",
     "@unocss/reset": "^0.45.30",
     "@vitejs/plugin-vue": "^3.2.0",
     "easy-typer-js": "^2.1.0",

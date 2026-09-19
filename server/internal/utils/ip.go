@@ -14,39 +14,39 @@ import (
 type IPutils struct{}
 
 // 方便其他package调用方法
-var IP  = new(IPutils)
+var IP = new(IPutils)
 
-func (*IPutils) GetIpaddress(c *gin.Context) (IPstring string){
+func (*IPutils) GetIpaddress(c *gin.Context) (IPstring string) {
 	// 项目明确了用ningx转发，所以真正的客户端的IP被封存在http请求`X-Real-Ip`中
 	IPstring = c.Request.Header.Get("X-Real-Ip")
 	//如果失败，尝试从`X-Forwarded-For`中获取
-	if IPstring == "" || len(IPstring) == 0 || strings.EqualFold("unknown", IPstring){
+	if IPstring == "" || len(IPstring) == 0 || strings.EqualFold("unknown", IPstring) {
 		IPs := c.Request.Header.Get("X-Forwarded-For")
 		// X-Forwarded-For 有三个IP地址， 第一个是客户端的真实IP，第二个是代理服务器的IP，第三个是负载均衡器的IP
-		splitIPs := strings.Split(IPs,",")
-		if len(splitIPs)> 0{
+		splitIPs := strings.Split(IPs, ",")
+		if len(splitIPs) > 0 {
 			IPstring = splitIPs[0]
 		}
 	}
 
 	// 如果前面两种方法都失败，直接使用remoteAddr获取地址 但是因为通过转发 这种方法获取的是nginx的地址
 	//至少保证有一个ip地址，不为空
-	if IPstring == "" || len(IPstring) == 0 || strings.EqualFold("unknown", IPstring){
+	if IPstring == "" || len(IPstring) == 0 || strings.EqualFold("unknown", IPstring) {
 		IPstring = c.Request.RemoteAddr
 	}
 
 	//检查是否是在本机
-	if strings.HasPrefix(IPstring,"127.0.0.1") || strings.HasPrefix(IPstring,"[::1]"){
+	if strings.HasPrefix(IPstring, "127.0.0.1") || strings.HasPrefix(IPstring, "[::1]") {
 		ip, err := externalIP()
 		if err != nil {
-			slog.Error("GetIpAddress, externalIP, err: ", err)
+			slog.Error("GetIpAddress, externalIP", "error", err)
 		}
 		IPstring = ip.String()
 	}
 
 	// 检查是否包含多个IP，取第一个IP
-	if IPstring != ""&&len(IPstring) > 15 && strings.Index(IPstring,",") > 0 {
-		IPstring = strings.Split(IPstring,",")[0]
+	if IPstring != "" && len(IPstring) > 15 && strings.Index(IPstring, ",") > 0 {
+		IPstring = strings.Split(IPstring, ",")[0]
 	}
 
 	return IPstring
@@ -57,42 +57,42 @@ func (*IPutils) GetIpaddress(c *gin.Context) (IPstring string){
 // vectorIndex 减少一次硬盘的IO
 var Vindex []byte
 
-func (*IPutils) GetIPsource(IPaddress string) string{
-	 Dbpath := "../assets/ip2region.xdb"
-	 // 查询IP是基于文件查询
+func (*IPutils) GetIPsource(IPaddress string) string {
+	Dbpath := "../assets/ip2region.xdb"
+	// 查询IP是基于文件查询
 
-	 if Vindex == nil{
-			var err error
-			// 注意阴影变量的错误
-			Vindex,err = xdb.LoadVectorIndexFromFile(Dbpath)
-			if err != nil {
-				slog.Error("加载IP2region的Vindex失败",err)
-				return ""
-			}
-	 }
+	if Vindex == nil {
+		var err error
+		// 注意阴影变量的错误
+		Vindex, err = xdb.LoadVectorIndexFromFile(Dbpath)
+		if err != nil {
+			slog.Error("加载IP2region的Vindex失败", "error", err)
+			return ""
+		}
+	}
 
-	 Seacher,err := xdb.NewWithVectorIndex(Dbpath,Vindex)
-	 if err != nil {
-		slog.Error("加载IP2region的Seacher失败",err)
+	Seacher, err := xdb.NewWithVectorIndex(Dbpath, Vindex)
+	if err != nil {
+		slog.Error("加载IP2region的Seacher失败", "error", err)
 		return ""
-	 }
-	 defer Seacher.Close()
+	}
+	defer Seacher.Close()
 
-	 region,err := Seacher.SearchByStr(IPaddress)
-	 if err!= nil {
-		slog.Error("查询IP2region失败",err)
+	region, err := Seacher.SearchByStr(IPaddress)
+	if err != nil {
+		slog.Error("查询IP2region失败", "error", err)
 		return ""
-	 }
-	 return region
+	}
+	return region
 }
 
 // 获取region的简单信息：湖南长沙 电信
-func (i *IPutils) GetIPsourceSimpleInfo(IPaddress string) string{
+func (i *IPutils) GetIPsourceSimpleInfo(IPaddress string) string {
 	regionstring := i.GetIPsource(IPaddress)
-// 国家|区域|省份|城市|ISP
-// 只有中国的数据绝大部分精确到了城市, 其他国家部分数据只能定位到国家, 后面的选项全部是 0
-	region := strings.Split(regionstring,"|")
-	if region[0] != "中国" && region[0] != "0"{
+	// 国家|区域|省份|城市|ISP
+	// 只有中国的数据绝大部分精确到了城市, 其他国家部分数据只能定位到国家, 后面的选项全部是 0
+	region := strings.Split(regionstring, "|")
+	if region[0] != "中国" && region[0] != "0" {
 		return region[0]
 	}
 
@@ -109,7 +109,7 @@ func (i *IPutils) GetIPsourceSimpleInfo(IPaddress string) string{
 	if region[2] == "" && region[3] == "" && region[4] == "" {
 		return region[0]
 	}
-	return region[2] + region[3] +" "+ region[4]
+	return region[2] + region[3] + " " + region[4]
 }
 
 // 获取访问的操作系统，客户端等

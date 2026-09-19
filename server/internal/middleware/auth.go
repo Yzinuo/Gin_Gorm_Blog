@@ -7,11 +7,15 @@ import (
 	"gin-blog/internal/model"
 	"gin-blog/internal/utils/jwt"
 	"log/slog"
+	"net/http"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/time/rate"
 	"gorm.io/gorm"
 )
 
@@ -46,6 +50,40 @@ func JWTAuth() gin.HandlerFunc {
 		if authenticateJWT(c) {
 			c.Next()
 		}
+	}
+}
+
+var assetMutationLimiters = struct {
+	sync.Mutex
+	items map[string]*rate.Limiter
+}{items: make(map[string]*rate.Limiter)}
+
+// AssetMutationRateLimit bounds expensive upload/publish/delete operations per
+// authenticated user. Reads remain unrestricted.
+func AssetMutationRateLimit() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.Request.Method == http.MethodGet {
+			c.Next()
+			return
+		}
+		key := c.ClientIP()
+		if auth, err := handle.CurrentUserAuth(c); err == nil && auth != nil {
+			key = "user:" + strconv.Itoa(auth.ID)
+		}
+		assetMutationLimiters.Lock()
+		limiter := assetMutationLimiters.items[key]
+		if limiter == nil {
+			limiter = rate.NewLimiter(rate.Every(5*time.Second), 4)
+			assetMutationLimiters.items[key] = limiter
+		}
+		allowed := limiter.Allow()
+		assetMutationLimiters.Unlock()
+		if !allowed {
+			c.Header("Retry-After", "5")
+			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{"code": http.StatusTooManyRequests, "message": "资源操作过于频繁，请稍后重试"})
+			return
+		}
+		c.Next()
 	}
 }
 
@@ -142,5 +180,35 @@ func PermissionCheck() gin.HandlerFunc {
 
 		slog.Debug("[middleware PermissionCheck]] 该用户有访问权限")
 		c.Next()
+	}
+}
+
+// AssetPermission is deliberately fail-closed. New asset routes must never
+// become anonymous merely because a deployment has not inserted its resource
+// permission rows yet.
+func AssetPermission() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		auth, err := handle.CurrentUserAuth(c)
+		if err != nil || auth == nil {
+			handle.ReturnError(c, g.ErrUserAuth, err)
+			return
+		}
+		if auth.IsSuper {
+			c.Next()
+			return
+		}
+		url, method := c.FullPath()[4:], c.Request.Method
+		for _, role := range auth.Roles {
+			allowed, checkErr := model.CheckRoleAuth(handle.GetDB(c), url, method, role.ID)
+			if checkErr != nil {
+				handle.ReturnError(c, g.ErrDbOp, checkErr)
+				return
+			}
+			if allowed {
+				c.Next()
+				return
+			}
+		}
+		handle.ReturnError(c, g.ErrPermission, nil)
 	}
 }

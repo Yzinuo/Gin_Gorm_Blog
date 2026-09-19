@@ -49,7 +49,8 @@ const styleObject = computed(() => {
   if (props.placement === 'top' || props.placement === 'bottom') {
     style.width = '100%'
     style.height = `${props.height}px`
-  } else if (props.placement === 'left' || props.placement === 'right') {
+  }
+  else if (props.placement === 'left' || props.placement === 'right') {
     style.width = `${props.width}px`
     style.height = '100%'
   }

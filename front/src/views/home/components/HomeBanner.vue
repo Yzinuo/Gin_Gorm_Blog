@@ -84,7 +84,7 @@ function scrollDown() {
 
     <!-- 底部滚动按钮 -->
     <button type="button" class="scroll-down-btn" aria-label="向下阅读文章" @click="scrollDown">
-      <span class="i-ep:arrow-down-bold arrow-icon" />
+      <span class="arrow-icon i-ep:arrow-down-bold" />
     </button>
   </div>
 </template>

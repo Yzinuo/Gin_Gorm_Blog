@@ -1,0 +1,13 @@
+{
+  "name": "gin-gorm-blog-asset-tools",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "optimize:model": "node optimize-resume-model.mjs",
+    "optimize:images": "node optimize-images.mjs"
+  },
+  "dependencies": {
+    "@gltf-transform/cli": "4.5.0",
+    "sharp": "0.33.5"
+  }
+}

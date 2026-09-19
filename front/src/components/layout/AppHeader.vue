@@ -78,7 +78,9 @@ async function logout() {
       </RouterLink>
       <!-- 右上角图标 -->
       <div class="flex items-center gap-2 text-2xl">
-        <RouterLink to="/about" class="about-nav-link mr-2 text-sm">自我介绍 ↗</RouterLink>
+        <RouterLink to="/about" class="about-nav-link mr-2 text-sm">
+          自我介绍 ↗
+        </RouterLink>
         <button @click="appStore.setSearchFlag(true)">
           <Icon icon="ic:round-search" />
         </button>

@@ -69,7 +69,6 @@ async function handleLogin() {
       else {
         // 登录成功后的重定向
         router.push('/home')
-        
       }
     }
     finally {

@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
 
 export function scrollFrame(sections, focus, totalFrames) {
   if (!sections.length || focus <= sections[0].y)
@@ -36,7 +37,7 @@ function disposeModel(model) {
   geometries.forEach(geometry => geometry.dispose())
 }
 
-export function createResumeScene({ canvas, stage, map, getSections, getStickers = () => [], onStickerError = () => {}, onProgress, onReady, onChapter, onError }) {
+export function createResumeScene({ canvas, stage, map, modelURL, getSections, getStickers = () => [], onStickerError = () => {}, onProgress, onReady, onChapter, onError }) {
   const controller = new AbortController()
   const { signal } = controller
   const motion = matchMedia('(prefers-reduced-motion: reduce)')
@@ -241,7 +242,9 @@ export function createResumeScene({ canvas, stage, map, getSections, getStickers
       resizeObserver = new ResizeObserver(resize)
       resizeObserver.observe(stage)
       resize()
-      const response = await fetch(`${import.meta.env.BASE_URL}resume/resume-ready.glb`, { signal })
+      const timeout = setTimeout(() => controller.abort(), 45000)
+      const response = await fetch(modelURL, { signal })
+      clearTimeout(timeout)
       if (!response.ok)
         throw new Error(`Model request failed: ${response.status}`)
       const size = Number(response.headers.get('content-length'))
@@ -263,7 +266,9 @@ export function createResumeScene({ canvas, stage, map, getSections, getStickers
       else buffer = await response.arrayBuffer()
       if (disposed)
         return
-      const gltf = await new GLTFLoader().parseAsync(buffer, '')
+      const loader = new GLTFLoader()
+      loader.setMeshoptDecoder(MeshoptDecoder)
+      const gltf = await loader.parseAsync(buffer, '')
       if (disposed) {
         disposeModel(gltf.scene)
         return

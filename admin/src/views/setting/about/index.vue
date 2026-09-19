@@ -1,10 +1,9 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { NButton, NTabPane, NTabs } from 'naive-ui'
-import ResumeEditor from './ResumeEditor.vue'
-
 import { MdEditor } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
+import ResumeEditor from './ResumeEditor.vue'
 
 import CommonPage from '@/components/common/CommonPage.vue'
 import api from '@/api'

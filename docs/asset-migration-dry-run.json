@@ -1,0 +1,150 @@
+{
+  "dry_run": true,
+  "generated_at": "2026-09-19T08:14:20.502115326Z",
+  "items": [
+    {
+      "source": "../front/public/ZaneFace.png",
+      "location": "repository",
+      "bytes": 560659,
+      "status": "inventory"
+    },
+    {
+      "source": "../front/public/apple-touch-icon.png",
+      "location": "repository",
+      "bytes": 18840,
+      "status": "inventory"
+    },
+    {
+      "source": "../front/public/favicon-32.png",
+      "location": "repository",
+      "bytes": 2725,
+      "status": "inventory"
+    },
+    {
+      "source": "../front/public/favicon.png",
+      "location": "repository",
+      "bytes": 1485199,
+      "status": "inventory"
+    },
+    {
+      "source": "../front/public/images/After-1672.webp",
+      "location": "repository",
+      "bytes": 71364,
+      "status": "inventory"
+    },
+    {
+      "source": "../front/public/images/After-960.webp",
+      "location": "repository",
+      "bytes": 33866,
+      "status": "inventory"
+    },
+    {
+      "source": "../front/public/images/After.png",
+      "location": "repository",
+      "bytes": 1721676,
+      "status": "inventory"
+    },
+    {
+      "source": "../front/public/images/Before-1672.webp",
+      "location": "repository",
+      "bytes": 63286,
+      "status": "inventory"
+    },
+    {
+      "source": "../front/public/images/Before-960.webp",
+      "location": "repository",
+      "bytes": 28902,
+      "status": "inventory"
+    },
+    {
+      "source": "../front/public/images/Before.png",
+      "location": "repository",
+      "bytes": 1579472,
+      "status": "inventory"
+    },
+    {
+      "source": "../front/public/resume/resume-ready.glb",
+      "location": "repository",
+      "bytes": 28128092,
+      "status": "inventory"
+    },
+    {
+      "source": "../front/public/resume/resume-ready.optimized.glb",
+      "location": "repository",
+      "bytes": 3858836,
+      "status": "inventory"
+    },
+    {
+      "source": "../front/public/resume/stickers/Github.png",
+      "location": "repository",
+      "bytes": 1788405,
+      "status": "inventory"
+    },
+    {
+      "source": "../front/public/resume/stickers/MIT6.824.png",
+      "location": "repository",
+      "bytes": 104293,
+      "status": "inventory"
+    },
+    {
+      "source": "../front/public/resume/stickers/中科院.png",
+      "location": "repository",
+      "bytes": 239367,
+      "status": "inventory"
+    },
+    {
+      "source": "../front/public/resume/stickers/国家励志.png",
+      "location": "repository",
+      "bytes": 251736,
+      "status": "inventory"
+    },
+    {
+      "source": "../front/public/resume/stickers/字节青训营.png",
+      "location": "repository",
+      "bytes": 185146,
+      "status": "inventory"
+    },
+    {
+      "source": "../front/public/resume/stickers/指色.png",
+      "location": "repository",
+      "bytes": 1564656,
+      "status": "inventory"
+    },
+    {
+      "source": "../front/public/resume/stickers/本科SCI.png",
+      "location": "repository",
+      "bytes": 196077,
+      "status": "inventory"
+    },
+    {
+      "source": "../front/public/resume/stickers/草花.png",
+      "location": "repository",
+      "bytes": 1348524,
+      "status": "inventory"
+    },
+    {
+      "source": "public/uploaded/603d5b9fdf0ec4d9701851443b565ce0_20241120170846.jpg",
+      "location": "repository",
+      "bytes": 121933,
+      "status": "inventory"
+    },
+    {
+      "source": "public/uploaded/603d5b9fdf0ec4d9701851443b565ce0_20241120170949.jpg",
+      "location": "repository",
+      "bytes": 121933,
+      "status": "inventory"
+    },
+    {
+      "source": "public/uploaded/7225f7c9fd2b9a4e9b7aadbfc31ea73e_20241116175210.png",
+      "location": "repository",
+      "bytes": 37453,
+      "status": "inventory"
+    },
+    {
+      "source": "public/uploaded/78805a221a988e79ef3f42d7c5bfd418_20241113155340.png",
+      "location": "repository",
+      "bytes": 642024,
+      "status": "inventory"
+    }
+  ]
+}

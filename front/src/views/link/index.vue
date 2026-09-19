@@ -31,4 +31,3 @@ onMounted(() => {
     </div>
   </BannerPage>
 </template>
-

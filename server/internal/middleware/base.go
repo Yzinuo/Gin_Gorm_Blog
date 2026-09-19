@@ -3,6 +3,7 @@ package middleware
 import (
 	g "gin-blog/internal/global"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -54,13 +55,26 @@ func WithMemStore(name, secret string) gin.HandlerFunc {
 }
 
 func CORS() gin.HandlerFunc {
+	configured := strings.Split(g.GetConfig().Server.CORSOrigins, ",")
+	origins := make([]string, 0, len(configured))
+	allowed := make(map[string]struct{}, len(configured))
+	for _, origin := range configured {
+		if origin = strings.TrimSpace(origin); origin != "" {
+			origin = strings.TrimRight(origin, "/")
+			origins = append(origins, origin)
+			allowed[origin] = struct{}{}
+		}
+	}
 	return cors.New(cors.Config{
-		AllowOrigins:     []string{"*"},
+		AllowOrigins:     origins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
 		AllowHeaders:     []string{"Origin", "Authorization", "Content-Type", "X-Requested-With"},
-		ExposeHeaders:    []string{"Content-Type"}, // 服务端返回数据后，允许客户端访问的响应头
-		AllowCredentials: true,                     //允许发送cookie等验证信息
-		AllowOriginFunc:  func(origin string) bool { return true },
-		MaxAge:           24 * time.Hour, // 缓存预检请求，提高服务性能
+		ExposeHeaders:    []string{"Content-Type", "ETag", "Content-Length", "Content-Range", "Accept-Ranges"},
+		AllowCredentials: true, //允许发送cookie等验证信息
+		AllowOriginFunc: func(origin string) bool {
+			_, ok := allowed[strings.TrimRight(origin, "/")]
+			return ok
+		},
+		MaxAge: 24 * time.Hour, // 缓存预检请求，提高服务性能
 	})
 }

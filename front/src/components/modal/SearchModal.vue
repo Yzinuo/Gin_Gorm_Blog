@@ -72,7 +72,9 @@ async function handleSearch() {
                 <span class="border-b-1 border-line border-solid text-lg" @click="searchFlag = false">{{ item.title }}</span>
               </RouterLink>
               <div class="ell-4 mt-1">
-                <p class="cursor-pointer text-muted">{{ item.content }}</p>
+                <p class="cursor-pointer text-muted">
+                  {{ item.content }}
+                </p>
               </div>
               <hr class="my-3 border-1 border-line border-dashed">
             </li>

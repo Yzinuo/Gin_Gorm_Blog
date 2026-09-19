@@ -57,5 +57,16 @@ export default {
         keepAlive: true,
       },
     },
+    {
+      name: 'Assets',
+      path: 'assets',
+      component: () => import('./assets/index.vue'),
+      meta: {
+        title: '资源管理',
+        icon: 'mdi:cloud-upload-outline',
+        order: 5,
+        keepAlive: true,
+      },
+    },
   ],
 }

@@ -69,7 +69,10 @@ async function upload(event) {
     const body = new FormData()
     body.append('file', file)
     const response = await fetch(`${import.meta.env.VITE_BASE_API || '/api'}/upload`, {
-      method: 'POST', headers: { Authorization: `Bearer ${auth.token}` }, body, signal: uploadController.signal,
+      method: 'POST',
+      headers: { Authorization: `Bearer ${auth.token}` },
+      body,
+      signal: uploadController.signal,
     })
     if (!response.ok)
       throw new Error('上传失败，请重试。')
@@ -139,6 +142,7 @@ onBeforeRouteLeave(() => {
       onMaskClick: () => resolve(false),
     })
   })
+})
 onMounted(() => {
   load()
   window.addEventListener('beforeunload', beforeUnload)
@@ -154,12 +158,16 @@ onBeforeUnmount(() => {
   <NSpin :show="loading">
     <div v-if="loadError" role="alert">
       成就配置加载失败，请重试。
-      <NButton @click="load">重新加载</NButton>
+      <NButton @click="load">
+        重新加载
+      </NButton>
     </div>
     <template v-else-if="entry">
       <div class="resume-toolbar">
         <p>选择一个位置，更换贴纸或修改介绍。保存后会同步更新前台卡片和人脸贴纸。</p>
-        <NButton type="primary" :loading="saving" :disabled="uploading || !dirty" @click="save">保存全部成就</NButton>
+        <NButton type="primary" :loading="saving" :disabled="uploading || !dirty" @click="save">
+          保存全部成就
+        </NButton>
       </div>
       <div class="resume-slots" aria-label="选择贴纸位置">
         <NButton v-for="(item, index) in entries" :key="item.id" :type="selected === index ? 'primary' : 'default'" :disabled="saving || uploading" @click="selected = index; imageError = ''">
@@ -171,10 +179,18 @@ onBeforeUnmount(() => {
           <NFormItem label="贴纸图片">
             <div>
               <input ref="fileInput" type="file" accept="image/png,image/jpeg,image/webp" hidden @change="upload">
-              <NButton :loading="uploading" :disabled="saving || uploading" @click="fileInput.click()">上传新贴纸</NButton>
-              <NButton :disabled="saving || uploading || !entry.image" @click="entry.image = ''; imageError = ''">恢复原贴纸</NButton>
-              <p class="resume-hint">推荐透明背景 PNG；最大 5 MB、4096 × 4096 像素，图片会等比居中显示。</p>
-              <NAlert v-if="imageError" type="error">{{ imageError }}</NAlert>
+              <NButton :loading="uploading" :disabled="saving || uploading" @click="fileInput.click()">
+                上传新贴纸
+              </NButton>
+              <NButton :disabled="saving || uploading || !entry.image" @click="entry.image = ''; imageError = ''">
+                恢复原贴纸
+              </NButton>
+              <p class="resume-hint">
+                推荐透明背景 PNG；最大 5 MB、4096 × 4096 像素，图片会等比居中显示。
+              </p>
+              <NAlert v-if="imageError" type="error">
+                {{ imageError }}
+              </NAlert>
             </div>
           </NFormItem>
           <NFormItem label="标题">
@@ -196,7 +212,11 @@ onBeforeUnmount(() => {
           <span>{{ entry.category }}</span>
           <h2>{{ entry.title }}</h2>
           <p>{{ entry.description }}</p>
-          <ul><li v-for="tag in entry.tags" :key="tag">{{ tag }}</li></ul>
+          <ul>
+            <li v-for="tag in entry.tags" :key="tag">
+              {{ tag }}
+            </li>
+          </ul>
           <small v-if="dirty">修改尚未保存</small>
         </aside>
       </div>

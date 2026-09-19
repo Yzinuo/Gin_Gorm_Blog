@@ -15,6 +15,7 @@ type Config struct {
 		DbType        string // mysql | sqlite
 		DbAutoMigrate bool   // 是否自动迁移数据库表结构
 		DbLogMode     string // silent | error | warn | info
+		CORSOrigins   string // comma-separated browser origins
 	}
 	Log struct {
 		Level     string // debug | info | warn | error
@@ -53,7 +54,7 @@ type Config struct {
 		Host     string // 服务器地址, 例如 smtp.qq.com 前往要发邮件的邮箱查看其 smtp 协议
 		Port     int    // 前往要发邮件的邮箱查看其 smtp 协议端口, 大多为 465
 		SmtpPass string // 邮箱密钥 不是密码是开启smtp后给你的密钥
-		SmtpUser string // 邮箱账号 
+		SmtpUser string // 邮箱账号
 	}
 	Captcha struct {
 		SendEmail  bool // 是否通过邮箱发送验证码
@@ -65,6 +66,17 @@ type Config struct {
 		Path      string // 本地文件访问路径
 		StorePath string // 本地文件存储路径
 	}
+	Storage struct {
+		Provider             string `mapstructure:"provider"`
+		AssetManifestEnabled bool   `mapstructure:"asset_manifest_enabled"`
+	} `mapstructure:"storage"`
+	R2 struct {
+		AccountID       string `mapstructure:"account_id"`
+		AccessKeyID     string `mapstructure:"access_key_id"`
+		SecretAccessKey string `mapstructure:"secret_access_key"`
+		Bucket          string `mapstructure:"bucket"`
+		PublicBaseURL   string `mapstructure:"public_base_url"`
+	} `mapstructure:"r2"`
 	Qiniu struct {
 		ImgPath       string // 外链链接
 		Zone          string // 存储区域
@@ -85,36 +97,73 @@ type Config struct {
 
 var Conf *Config
 
-func GetConfig() *Config{
+func GetConfig() *Config {
 	if Conf == nil {
 		log.Panic("配置还没有初始化")
 		return nil
 	}
-	
+
 	return Conf
 }
 
-func ReadConfig(path string) *Config{
+func ReadConfig(path string) *Config {
 	v := viper.New()
 	v.SetConfigFile(path)
-	v.AutomaticEnv() // 如果配置文件中有环境变量
-	v.SetEnvKeyReplacer(strings.NewReplacer(".","_")) // 环境变量中分割符号都是下划线
-	
-	if err := v.ReadInConfig(); err !=nil{
-		panic("读取配置文件失败"+err.Error())
+	v.AutomaticEnv()                                   // 如果配置文件中有环境变量
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_")) // 环境变量中分割符号都是下划线
+	// Bind the stable deployment names explicitly. Viper's implicit field-name
+	// mapping is not reliable for initialisms such as R2 or for flat env names.
+	bindings := map[string]string{
+		"server.cors_origins":            "CORS_ALLOWED_ORIGINS",
+		"storage.provider":               "STORAGE_PROVIDER",
+		"storage.asset_manifest_enabled": "ASSET_MANIFEST_ENABLED",
+		"r2.account_id":                  "R2_ACCOUNT_ID",
+		"r2.access_key_id":               "R2_ACCESS_KEY_ID",
+		"r2.secret_access_key":           "R2_SECRET_ACCESS_KEY",
+		"r2.bucket":                      "R2_BUCKET",
+		"r2.public_base_url":             "R2_PUBLIC_BASE_URL",
 	}
-	if err := v.Unmarshal(&Conf); err != nil{
-		panic("unmarsh 解析配置文件失败"+err.Error())
+	for key, env := range bindings {
+		if err := v.BindEnv(key, env); err != nil {
+			panic("绑定环境变量失败: " + err.Error())
+		}
 	}
-	log.Println("配置初始化成功:"+path)
-	
+
+	if err := v.ReadInConfig(); err != nil {
+		panic("读取配置文件失败" + err.Error())
+	}
+	if err := v.Unmarshal(&Conf); err != nil {
+		panic("unmarsh 解析配置文件失败" + err.Error())
+	}
+	if Conf.Storage.Provider == "" {
+		Conf.Storage.Provider = Conf.Upload.OssType
+	}
+	if Conf.Storage.Provider == "r2" {
+		missing := make([]string, 0, 5)
+		for name, value := range map[string]string{
+			"R2_ACCOUNT_ID":        Conf.R2.AccountID,
+			"R2_ACCESS_KEY_ID":     Conf.R2.AccessKeyID,
+			"R2_SECRET_ACCESS_KEY": Conf.R2.SecretAccessKey,
+			"R2_BUCKET":            Conf.R2.Bucket,
+			"R2_PUBLIC_BASE_URL":   Conf.R2.PublicBaseURL,
+		} {
+			if strings.TrimSpace(value) == "" {
+				missing = append(missing, name)
+			}
+		}
+		if len(missing) > 0 {
+			panic("R2 配置不完整，缺少: " + strings.Join(missing, ", "))
+		}
+	}
+	log.Println("配置初始化成功:" + path)
+
 	return Conf
 }
 
-func (*Config) DbType() string{
-	if Conf.Server.DbType == ""{
+func (*Config) DbType() string {
+	if Conf.Server.DbType == "" {
 		Conf.Server.DbType = "sqlite"
-	} 
+	}
 	return Conf.Server.DbType
 }
 

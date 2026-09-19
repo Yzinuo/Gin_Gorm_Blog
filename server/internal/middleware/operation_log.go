@@ -3,15 +3,15 @@ package middleware
 
 import (
 	"bytes"
+	g "gin-blog/internal/global"
 	"gin-blog/internal/handle"
 	"gin-blog/internal/model"
 	"gin-blog/internal/utils"
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 	"io"
 	"log/slog"
 	"strings"
-	g "gin-blog/internal/global"
-	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 var optMap = map[string]string{
@@ -41,41 +41,42 @@ type DecResponseWriter struct {
 	body *bytes.Buffer // 缓存
 }
 
-func (w DecResponseWriter) Write(data []byte) (int,error){
+func (w DecResponseWriter) Write(data []byte) (int, error) {
 	w.body.Write(data)
 	return w.ResponseWriter.Write(data)
 }
 
-func (w DecResponseWriter) WriteString(s string) (int,error){
+func (w DecResponseWriter) WriteString(s string) (int, error) {
 	w.body.Write([]byte(s))
 	return w.ResponseWriter.WriteString(s)
 }
 
-func GetOptionMap(key string)string{
+func GetOptionMap(key string) string {
 	return optMap[key]
 }
 
-//// "gin-blog/api/v1.(*Resource).Delete-fm" => "Resource
-func getOptResource (handleName string) string{
-	s := strings.Split(handleName,".")[1]
-	return s[2:len(s)-1]
+// // "gin-blog/api/v1.(*Resource).Delete-fm" => "Resource
+func getOptResource(handleName string) string {
+	s := strings.Split(handleName, ".")[1]
+	return s[2 : len(s)-1]
 }
 
-func OperationLog() gin.HandlerFunc{
-	return func (c *gin.Context){
+func OperationLog() gin.HandlerFunc {
+	return func(c *gin.Context) {
 		// 如果是get方法(太多)和文件上传操作(body太长),不记录
-		if c.Request.Method != "GET" && !strings.Contains(c.Request.RequestURI,"upload") {// RequstURI:  /search?q=golang HTTP/1.1
+		contentType := c.GetHeader("Content-Type")
+		if c.Request.Method != "GET" && !strings.Contains(c.Request.RequestURI, "upload") && !strings.HasPrefix(contentType, "multipart/form-data") { // RequstURI:  /search?q=golang HTTP/1.1
 			blw := DecResponseWriter{
 				ResponseWriter: c.Writer,
-				body: bytes.NewBufferString(""),
+				body:           bytes.NewBufferString(""),
 			}
-			
+
 			//自定义gin的Writer 和 request body
 			c.Writer = blw
-			body,_ := io.ReadAll(c.Request.Body)
+			body, _ := io.ReadAll(c.Request.Body)
 			c.Request.Body = io.NopCloser(bytes.NewBuffer(body))
-			
-			auth,_ := handle.CurrentUserAuth(c)
+
+			auth, _ := handle.CurrentUserAuth(c)
 			ipAddress := utils.IP.GetIpaddress(c)
 			ipSource := utils.IP.GetIPsource(ipAddress)
 			moduleName := getOptResource(c.HandlerName())
@@ -95,14 +96,14 @@ func OperationLog() gin.HandlerFunc{
 			}
 			c.Next()
 			operationLog.ResponseData = blw.body.String()
-			
+
 			db := c.MustGet(g.CTX_DB).(*gorm.DB)
 			if result := db.Create(&operationLog).Error; result != nil {
-				slog.Error("记录操作日志失败",result)
+				slog.Error("记录操作日志失败", "error", result)
 				handle.ReturnError(c, g.ErrDbOp, result)
 				return
 			}
-		}else {
+		} else {
 			c.Next()
 		}
 

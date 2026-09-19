@@ -57,7 +57,7 @@ const coverStyle = computed(() => {
 <template>
   <!-- 顶部图片 -->
   <div :style="coverStyle" class="banner-fade-down absolute inset-x-0 top-0 h-[280px] f-c-c lg:h-[400px]">
-    <h1 class="mt-[40px] animate-fade-in-down animate-duration-800 text-3xl font-bold text-light lg:text-4xl">
+    <h1 class="mt-[40px] animate-fade-in-down animate-duration-800 text-3xl text-light font-bold lg:text-4xl">
       {{ props.title }}
     </h1>
   </div>

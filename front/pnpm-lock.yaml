@@ -60,6 +60,9 @@ importers:
       '@unocss/eslint-config':
         specifier: ^0.58.0
         version: 0.58.0(eslint@8.55.0)(typescript@5.3.3)
+      '@unocss/eslint-plugin':
+        specifier: ^0.58.0
+        version: 0.58.0(eslint@8.55.0)(typescript@5.3.3)
       '@unocss/reset':
         specifier: ^0.45.30
         version: 0.45.30

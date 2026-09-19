@@ -3,7 +3,7 @@ import { onMounted, ref } from 'vue'
 import { useWindowScroll, watchThrottled } from '@vueuse/core'
 
 const { previewRef } = defineProps({
-  previewRef: { type: Object, required: true, },
+  previewRef: { type: Object, required: true },
 })
 
 onMounted(() => {
@@ -16,7 +16,7 @@ const headings = Array.from(previewRef.querySelectorAll('h1,h2,h3,h4,h5,h6'))
 
 function buildAnchors() {
   // 用于确认层级
-  const titleList = Array.from(headings).filter(t => !!t.innerText.trim())
+  const titleList = Array.from(headings).filter(t => !!t.textContent.trim())
   const hTags = Array.from(new Set(titleList.map(t => t.tagName))).sort()
 
   let count = 0 // 解决重名问题
@@ -26,7 +26,7 @@ function buildAnchors() {
     headings[i].id = `${anchor}-${count++}`
     anchors.value.push({
       id: headings[i].id,
-      name: headings[i].innerText,
+      name: headings[i].textContent,
       indent: hTags.indexOf(headings[i].tagName),
     })
   }
@@ -64,9 +64,10 @@ watchThrottled(y, () => {
       <ul>
         <li v-for="anchor of anchors" :key="anchor.id">
           <div
-            class="cursor-pointer border-l-4 border-transparent rounded py-1 text-sm color-muted hover:bg-brand-soft transition-colors"
+            class="cursor-pointer border-l-4 border-transparent rounded py-1 text-sm color-muted transition-colors hover:bg-brand-soft"
             :class="anchor.id === selectAnchor && 'bg-brand-soft text-brand font-semibold border-l-brand'"
-            :style="{ paddingLeft: `${8 + anchor.indent * 14}px` }" @click="handleClickAnchor(anchor.id)">
+            :style="{ paddingLeft: `${8 + anchor.indent * 14}px` }" @click="handleClickAnchor(anchor.id)"
+          >
             {{ anchor.name }}
           </div>
         </li>

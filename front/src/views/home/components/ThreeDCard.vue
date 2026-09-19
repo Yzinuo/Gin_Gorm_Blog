@@ -1,6 +1,50 @@
+<script setup>
+import { computed, provide, ref } from 'vue'
+
+const containerRef = ref(null)
+const isMouseEntered = ref(false)
+const rotateX = ref(0)
+const rotateY = ref(0)
+
+// 提供给子组件 (Item) 使用
+provide('threed-mouse-state', isMouseEntered)
+
+function handleMouseMove(e) {
+  if (!containerRef.value)
+    return
+  const { left, top, width, height } = containerRef.value.getBoundingClientRect()
+
+  // 计算旋转角度 (类似 React 版的逻辑)
+  const x = (e.clientX - left - width / 2) / 25
+  const y = (e.clientY - top - height / 2) / 25
+
+  rotateX.value = x
+  rotateY.value = y
+}
+
+function handleMouseEnter() {
+  isMouseEntered.value = true
+}
+
+function handleMouseLeave() {
+  isMouseEntered.value = false
+  // 复位
+  rotateX.value = 0
+  rotateY.value = 0
+}
+
+const bodyStyle = computed(() => {
+  return {
+    transform: `rotateY(${rotateX.value}deg) rotateX(${rotateY.value}deg)`,
+    transformStyle: 'preserve-3d',
+    transition: 'transform 0.1s ease-out', // 鼠标移动时平滑一点
+  }
+})
+</script>
+
 <template>
-  <div 
-    class="threed-container" 
+  <div
+    class="threed-container"
     style="perspective: 1000px;"
   >
     <div
@@ -11,53 +55,10 @@
       @mousemove="handleMouseMove"
       @mouseleave="handleMouseLeave"
     >
-      <slot></slot>
+      <slot />
     </div>
   </div>
 </template>
-
-<script setup>
-import { ref, provide, computed } from 'vue';
-
-const containerRef = ref(null);
-const isMouseEntered = ref(false);
-const rotateX = ref(0);
-const rotateY = ref(0);
-
-// 提供给子组件 (Item) 使用
-provide('threed-mouse-state', isMouseEntered);
-
-const handleMouseMove = (e) => {
-  if (!containerRef.value) return;
-  const { left, top, width, height } = containerRef.value.getBoundingClientRect();
-  
-  // 计算旋转角度 (类似 React 版的逻辑)
-  const x = (e.clientX - left - width / 2) / 25;
-  const y = (e.clientY - top - height / 2) / 25;
-  
-  rotateX.value = x;
-  rotateY.value = y;
-};
-
-const handleMouseEnter = () => {
-  isMouseEntered.value = true;
-};
-
-const handleMouseLeave = () => {
-  isMouseEntered.value = false;
-  // 复位
-  rotateX.value = 0;
-  rotateY.value = 0;
-};
-
-const bodyStyle = computed(() => {
-  return {
-    transform: `rotateY(${rotateX.value}deg) rotateX(${rotateY.value}deg)`,
-    transformStyle: 'preserve-3d',
-    transition: 'transform 0.1s ease-out' // 鼠标移动时平滑一点
-  };
-});
-</script>
 
 <style scoped>
 .threed-container {
@@ -65,7 +66,7 @@ const bodyStyle = computed(() => {
   align-items: center;
   justify-content: center;
   /* 允许鼠标事件穿透容器边缘，只响应 Body */
-  padding: 2rem; 
+  padding: 2rem;
 }
 
 .threed-body {

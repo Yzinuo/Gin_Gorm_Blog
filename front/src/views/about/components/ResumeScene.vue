@@ -3,7 +3,7 @@ import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { createResumeScene } from '../scene'
 import cameraMap from '../camera-map.json'
 
-const props = defineProps({ story: Object, stickers: { type: Array, default: () => [] } })
+const props = defineProps({ story: Object, stickers: { type: Array, default: () => [] }, modelUrl: { type: String, default: '' } })
 const emit = defineEmits(['chapter'])
 const stage = ref(null)
 const canvas = ref(null)
@@ -28,6 +28,7 @@ async function start() {
     map: cameraMap,
     getSections: () => props.story?.querySelectorAll('[data-frame]') || [],
     getStickers: () => props.stickers,
+    modelURL: props.modelUrl || `${import.meta.env.BASE_URL}resume/resume-ready.glb`,
     onStickerError: failed => stickerError.value = failed,
     onProgress: value => progress.value = value,
     onReady: () => status.value = 'ready',
@@ -84,7 +85,9 @@ onUnmounted(() => {
     <slot v-if="status === 'ready'" />
     <div v-if="status === 'ready' && stickerError" class="sticker-error" role="status">
       部分贴纸加载失败，暂用原图。
-      <button type="button" @click="scene?.updateStickers()">重试</button>
+      <button type="button" @click="scene?.updateStickers()">
+        重试
+      </button>
     </div>
   </div>
 </template>
