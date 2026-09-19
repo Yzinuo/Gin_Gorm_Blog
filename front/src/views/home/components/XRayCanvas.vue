@@ -9,9 +9,6 @@ const isReady = ref(false)
 const hasError = ref(false)
 let disposed = false
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches
-const connection = navigator.connection
-const constrainedNetwork = connection?.saveData || ['slow-2g', '2g', '3g'].includes(connection?.effectiveType)
-const canAutoEnhance = !reducedMotion && !constrainedNetwork && !matchMedia('(max-width: 640px)').matches
 const beforeURL = computed(() => props.asset?.before?.src || '/images/Before-1672.webp')
 const afterURL = computed(() => props.asset?.after?.src || '/images/After-1672.webp')
 const beforeSrcset = computed(() => {
@@ -275,6 +272,11 @@ function loadTexture(gl, url) {
       resolve(texture)
     }
     image.onerror = (e) => {
+      if (url.endsWith('.webp')) {
+        const fallbackUrl = url.includes('Before') ? '/images/Before.png' : '/images/After.png'
+        image.src = fallbackUrl
+        return
+      }
       gl.deleteTexture(texture)
       reject(e)
     }
@@ -424,6 +426,16 @@ function handleMouseLeave() {
   state.targetHover = 0.0
 }
 
+function handleTouchStart(e) {
+  if (e.touches && e.touches.length > 0)
+    handleMouseMove(e.touches[0])
+}
+
+function handleTouchMove(e) {
+  if (e.touches && e.touches.length > 0)
+    handleMouseMove(e.touches[0])
+}
+
 let resizeObserver = null
 
 async function startEnhancement() {
@@ -485,14 +497,17 @@ async function startEnhancement() {
 }
 
 onMounted(() => {
+  // 默认启动 X-Ray 效果
+  startEnhancement()
   intersectionObserver = new IntersectionObserver(([entry]) => {
     isVisible = entry.isIntersecting
-    if (entry.isIntersecting && canAutoEnhance && !hasStarted.value) {
-      const schedule = window.requestIdleCallback || (callback => setTimeout(callback, 1200))
-      schedule(() => startEnhancement(), { timeout: 4000 })
+    if (entry.isIntersecting && !hasStarted.value) {
+      startEnhancement()
     }
   })
-  intersectionObserver.observe(containerRef.value)
+  if (containerRef.value) {
+    intersectionObserver.observe(containerRef.value)
+  }
 })
 
 onUnmounted(() => {
@@ -525,8 +540,10 @@ onUnmounted(() => {
     @mousemove="handleMouseMove"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
+    @touchstart.passive="handleTouchStart"
+    @touchmove.passive="handleTouchMove"
   >
-    <picture class="xray-fallback">
+    <picture v-if="!isReady || hasError" class="xray-fallback">
       <source v-if="beforeSrcset" :srcset="beforeSrcset" sizes="100vw" type="image/webp">
       <img :src="beforeURL" alt="博客封面" width="1672" height="941" fetchpriority="high">
     </picture>
@@ -539,9 +556,6 @@ onUnmounted(() => {
         <span class="loading-text">封面加载中…</span>
       </div>
     </Transition>
-    <button v-if="!canAutoEnhance && !hasStarted && !hasError && !reducedMotion" type="button" class="enable-xray" @click="startEnhancement">
-      启用 X-Ray 互动效果
-    </button>
   </div>
 </template>
 
@@ -566,7 +580,6 @@ onUnmounted(() => {
   height: 100%;
   display: block;
 }
-.enable-xray { position: absolute; right: 18px; bottom: 18px; z-index: 12; padding: 10px 14px; color: #fff; border: 1px solid #ffffff55; background: #171114cc; border-radius: 6px; }
 .xray-canvas.is-unavailable { visibility: hidden; }
 
 .loading-overlay {
