@@ -1,12 +1,61 @@
+<script setup>
+import { onMounted, onUnmounted, ref } from 'vue'
+import XRayCanvas from './XRayCanvas.vue'
+import api from '@/api'
+
+const props = defineProps({
+  blogConfig: { type: Object, default: () => ({ website_name: 'Zane' }) },
+  typer: { type: Object, default: () => ({ output: '' }) },
+})
+const xrayAsset = ref(null)
+
+async function loadAssets() {
+  try {
+    const { data } = await api.getAssets('home')
+    xrayAsset.value = data?.assets?.['home.xray'] || null
+  }
+  catch {
+    // The component has a lightweight repository fallback.
+  }
+}
+
+// 文字轮播列表
+const textList = [props.blogConfig.website_name || 'Zane', 'Developer', 'Dreamer', 'Creator']
+const currentText = ref(textList[0])
+let textInterval = null
+
+onMounted(() => {
+  loadAssets()
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches)
+    return
+  let idx = 0
+  textInterval = setInterval(() => {
+    idx = (idx + 1) % textList.length
+    currentText.value = textList[idx]
+  }, 3500)
+})
+
+onUnmounted(() => {
+  if (textInterval)
+    clearInterval(textInterval)
+})
+
+function scrollDown() {
+  document.getElementById('articles')?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })
+}
+</script>
+
 <template>
   <div class="banner-container">
     <!-- WebGL X-Ray 核心画布 (透视人物) -->
-    <XRayCanvas class="xray-canvas-layer" />
+    <XRayCanvas class="xray-canvas-layer" :asset="xrayAsset" />
 
     <!-- 顶部/前景层：文字与信息浮于左方 -->
     <div class="banner-content-overlay">
       <div class="hero-left-col">
-        <p class="hero-eyebrow">DEVELOPER / DREAMER / CREATOR</p>
+        <p class="hero-eyebrow">
+          DEVELOPER / DREAMER / CREATOR
+        </p>
         <!-- 切换标题 (原样式，居左排版) -->
         <div class="title-wrapper">
           <Transition name="fade-blur">
@@ -20,12 +69,14 @@
         <div class="subtitle-clean">
           <span class="subtitle-bullet">///</span>
           <span class="text-content">
-            {{ (typer?.output || '日日自新，步步强于昨日') }}
+            {{ typer?.output || '日日自新，步步强于昨日' }}
           </span>
-          <span class="cyber-cursor"></span>
+          <span class="cyber-cursor" />
         </div>
         <div class="hero-actions">
-          <RouterLink to="/about" class="hero-primary">认识我 · 3D 履历 <span aria-hidden="true">↗</span></RouterLink>
+          <RouterLink to="/about" class="hero-primary">
+            认识我 · 3D 履历 <span aria-hidden="true">↗</span>
+          </RouterLink>
           <a href="#articles" class="hero-secondary" @click.prevent="scrollDown">阅读文章 <span aria-hidden="true">↓</span></a>
         </div>
       </div>
@@ -38,46 +89,11 @@
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
-import XRayCanvas from './XRayCanvas.vue';
-
-const props = defineProps({
-  blogConfig: { type: Object, default: () => ({ website_name: 'Zane' }) },
-  typer: { type: Object, default: () => ({ output: '' }) }
-});
-const emit = defineEmits(['scroll-down']);
-
-// 文字轮播列表
-const textList = [props.blogConfig.website_name || 'Zane', 'Developer', 'Dreamer', 'Creator'];
-const currentText = ref(textList[0]);
-let textInterval = null;
-
-onMounted(() => {
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  let idx = 0;
-  textInterval = setInterval(() => {
-    idx = (idx + 1) % textList.length;
-    currentText.value = textList[idx];
-  }, 3500);
-});
-
-onUnmounted(() => {
-  if (textInterval) clearInterval(textInterval);
-});
-
-const scrollDown = () => {
-  emit('scroll-down');
-  document.getElementById('articles')?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
-};
-</script>
-
 <style lang="scss" scoped>
-
 .banner-container {
   position: relative;
-  height: 85svh;
-  min-height: 580px;
+  height: 100svh;
+  min-height: 100vh;
   width: 100%;
   overflow: hidden;
   background-color: var(--bg-stage);
@@ -245,16 +261,25 @@ const scrollDown = () => {
 </style>
 
 <style scoped>
-.banner-container::after { content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: linear-gradient(90deg, #170f14dc, #170f1433 55%, transparent), linear-gradient(0deg, var(--bg-page), transparent 20%); }
+.banner-container::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(23, 15, 20, 0.88) 0%, rgba(23, 15, 20, 0.35) 45%, transparent 70%),
+    linear-gradient(180deg, transparent 0%, transparent 75%, rgba(23, 15, 20, 0.5) 90%, #170f14 100%);
+}
 .hero-eyebrow { color: var(--brand); font: 11px Consolas, monospace; letter-spacing: 3px; margin-bottom: 20px; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; pointer-events: auto; }
 .hero-actions a { display: inline-flex; align-items: center; justify-content: space-between; gap: 22px; padding: 15px 23px; font-size: 14px; transition: background 180ms, transform 180ms; }
-.hero-primary { background: var(--brand); color: var(--on-brand); }
+.hero-primary { background: var(--brand); color: #ffffff; }
 .hero-primary:hover { background: var(--brand-hover); transform: translateY(-2px); }
-.hero-secondary { border: 1px solid #bca3a766; color: var(--text-primary); }
-.hero-secondary:hover { background: var(--brand-soft); }
+.hero-secondary { border: 1px solid rgba(255, 255, 255, 0.35); color: #ffffff; }
+.hero-secondary:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.6); }
 .subtitle-bullet { color: var(--brand); }
 .cyber-cursor { background: var(--brand); box-shadow: 0 0 8px var(--brand); }
-@media (max-width: 640px) { .banner-container { height: 85svh; min-height: 550px; } .hero-actions { gap: 10px; } .hero-actions a { padding: 14px 16px; gap: 12px; font-size: 13px; } .subtitle-clean { font-size: 15px; } .hero-eyebrow { font-size: 10px; letter-spacing: 2px; } }
+@media (max-width: 640px) { .banner-container { height: 100svh; min-height: 100vh; } .hero-actions { gap: 10px; } .hero-actions a { padding: 14px 16px; gap: 12px; font-size: 13px; } .subtitle-clean { font-size: 15px; } .hero-eyebrow { font-size: 10px; letter-spacing: 2px; } }
 @media (prefers-reduced-motion: reduce) { .dreamy-title, .cyber-cursor, .scroll-down-btn { animation: none; } .fade-blur-enter-active, .fade-blur-leave-active { transition: none; } }
 </style>

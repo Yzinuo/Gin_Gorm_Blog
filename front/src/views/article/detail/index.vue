@@ -23,6 +23,7 @@ import Comment from '@/components/comment/Comment.vue'
 
 import { convertImgUrl } from '@/utils'
 import { sanitizeHtml } from '@/utils/sanitize'
+import { enhanceCodeBlocks } from '@/utils/codeBlock'
 import api from '@/api'
 
 hljs.registerLanguage('go', go)
@@ -66,6 +67,8 @@ async function loadArticle() {
     await nextTick()
     // highlight.js 代码高亮
     previewRef.value?.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el))
+    // 增强代码块 (VS Code 终端顶栏 + 一键复制)
+    enhanceCodeBlocks(previewRef.value)
     // MathJax 渲染公式
     window.MathJax?.typeset?.([previewRef.value])
   }

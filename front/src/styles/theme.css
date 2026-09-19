@@ -1,18 +1,19 @@
 :root {
-  color-scheme: dark;
-  --bg-page: #141316;
-  --bg-surface: #211e21;
-  --bg-raised: #2c252a;
+  color-scheme: light;
+  --bg-page: #f7f4ee;
+  --bg-surface: #ffffff;
+  --bg-raised: #ece7de;
   --bg-stage: #170f14;
-  --text-primary: #f0e9e4;
-  --text-muted: #b5a5a7;
+  --text-primary: #2a2723;
+  --text-muted: #78716c;
   --brand: #df635f;
-  --brand-hover: #f47e76;
-  --brand-soft: #df635f1f;
-  --on-brand: #190c0d;
-  --border-color: #493b40;
-  --shadow-card: 0 8px 28px #09060940;
-  font-family: Inter, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --brand-hover: #e8736f;
+  --brand-soft: rgba(223, 99, 95, 0.12);
+  --on-brand: #ffffff;
+  --border-color: #e8e2d8;
+  --shadow-card: 0 4px 20px rgba(78, 65, 50, 0.05);
+  --shadow-card-hover: 0 10px 30px rgba(78, 65, 50, 0.1);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Noto Sans SC', sans-serif;
   font-feature-settings: 'liga' 1, 'calt' 1;
 }
 html, body, #app {
@@ -24,6 +25,7 @@ html, body, #app {
 body {
   background: var(--bg-page);
   color: var(--text-primary);
+  line-height: 1.75;
   overflow-y: scroll;
   cursor: url('/cursor/normal.cur'), auto;
 }
@@ -37,7 +39,8 @@ a, button, input, textarea {
   -webkit-tap-highlight-color: transparent;
 }
 input, textarea, select {
-  background-color: var(--bg-raised);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
   color: var(--text-primary);
   caret-color: var(--brand);
   accent-color: var(--brand);
@@ -51,7 +54,7 @@ input::placeholder, textarea::placeholder {
 }
 ::selection {
   background: var(--brand);
-  color: var(--on-brand);
+  color: #ffffff;
 }
 ::-webkit-scrollbar {
   width: 8px;
@@ -61,7 +64,7 @@ input::placeholder, textarea::placeholder {
   background: var(--bg-page);
 }
 ::-webkit-scrollbar-thumb {
-  background: #895455;
+  background: #d6cebf;
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
@@ -78,6 +81,7 @@ input::placeholder, textarea::placeholder {
 }
 .prose {
   color: var(--text-primary);
+  line-height: 1.8;
   --un-prose-body: var(--text-primary);
   --un-prose-headings: var(--text-primary);
   --un-prose-links: var(--brand);
@@ -87,47 +91,69 @@ input::placeholder, textarea::placeholder {
   --un-prose-hr: var(--border-color);
   --un-prose-quotes: var(--text-muted);
   --un-prose-quote-borders: var(--brand);
-  --un-prose-code: var(--brand-hover);
-  --un-prose-pre-code: var(--text-primary);
-  --un-prose-pre-bg: var(--bg-stage);
+  --un-prose-code: #c2413d;
+  --un-prose-pre-code: #e4e4e7;
+  --un-prose-pre-bg: #18181b;
   --un-prose-th-borders: var(--border-color);
   --un-prose-td-borders: var(--border-color);
-}
-.prose {
   --un-prose-lists: var(--brand);
   --un-prose-captions: var(--text-muted);
   --un-prose-borders: var(--border-color);
   --un-prose-bg-soft: var(--bg-raised);
 }
-.prose :where(h1,h2,h3,h4,h5,h6,strong,b,th) {
+.prose :where(h1,h2,h3,h4,h5,h6) {
   color: var(--text-primary);
+  font-weight: 700;
+  line-height: 1.35;
+  margin-top: 1.8em;
+  margin-bottom: 0.8em;
+}
+.prose :where(h2) {
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--border-color);
+}
+.prose :where(p) {
+  margin-bottom: 1.25em;
 }
 .prose :where(a) {
   color: var(--brand);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .prose :where(blockquote) {
   color: var(--text-muted);
-  border-color: var(--brand);
+  border-left: 3px solid var(--brand);
   background: var(--brand-soft);
-  padding: 0.75rem 1.25rem;
+  border-radius: 0 8px 8px 0;
+  padding: 0.85rem 1.25rem;
+  margin: 1.5em 0;
 }
 .prose :where(hr,td,th) {
   border-color: var(--border-color);
 }
 .prose :where(code):not(pre code) {
-  color: var(--brand-hover);
+  color: #b93834;
   background: var(--bg-raised);
-  padding: 0.15em 0.35em;
+  border: 1px solid #dfd8cc;
+  padding: 0.15em 0.4em;
   border-radius: 4px;
+  font-size: 0.88em;
+  font-family: 'Fira Code', Consolas, Monaco, monospace;
 }
 .prose :where(pre) {
-  background: var(--bg-stage);
-  color: var(--text-primary);
+  background: #18181b !important;
+  color: #e4e4e7 !important;
+  border-radius: 10px;
+  border: 1px solid #27272a;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   max-width: 100%;
   overflow: auto;
+  padding: 1rem 1.25rem;
+  margin: 1.5em 0;
 }
 .prose :where(img) {
   border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 .prose :where(table) {
   display: block;
@@ -141,11 +167,80 @@ input::placeholder, textarea::placeholder {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, #170f1477, #170f1433 55%, var(--bg-page));
+  background: linear-gradient(180deg, rgba(23, 15, 20, 0.5) 0%, rgba(23, 15, 20, 0.15) 45%, rgba(247, 244, 238, 0.7) 85%, var(--bg-page) 100%);
   pointer-events: none;
 }
 .banner-fade-down > * {
   position: relative;
+}
+/* 代码块终端容器与一键复制组件 */
+.code-block-wrapper {
+  margin: 1.6em 0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #18181b;
+  border: 1px solid #27272a;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+.code-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: #1f1f23;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  user-select: none;
+}
+.code-lang-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.code-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.code-dot.red { background: #ff5f56; }
+.code-dot.yellow { background: #ffbd2e; }
+.code-dot.green { background: #27c93f; }
+.code-lang-name {
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #a1a1aa;
+  letter-spacing: 0.5px;
+  font-family: Consolas, Monaco, monospace;
+}
+.code-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  font-size: 12px;
+  color: #a1a1aa;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.code-copy-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+.code-copy-btn.copied {
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.4);
+  background: rgba(52, 211, 153, 0.12);
+}
+.code-block-wrapper pre {
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

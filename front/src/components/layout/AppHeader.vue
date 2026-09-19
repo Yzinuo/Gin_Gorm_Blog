@@ -162,17 +162,18 @@ async function logout() {
 
 <style scoped lang="scss">
 .nav {
-  transition: all 0.8s;
+  transition: all 0.5s;
   color: #fff;
   background: rgba(0, 0, 0, 0) !important;
 }
 
 .nav-fixed {
-  transition: all 0.8s;
-  color: var(--text-primary);
-  background: rgba(20, 19, 22, 0.94) !important;
+  transition: all 0.5s;
+  color: #f0e9e4;
+  background: rgba(20, 19, 22, 0.88) !important;
   backdrop-filter: blur(16px);
-  box-shadow: 0 5px 6px -5px rgba(133, 133, 133, 0.6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
   & .menu-btn:hover {
     color: var(--brand) !important;
   }
@@ -214,8 +215,11 @@ async function logout() {
   right: 0;
   width: max-content;
   margin-top: 8px;
-  box-shadow: 0 5px 20px -4px rgba(0, 0, 0, 0.5);
-  background-color: var(--bg-surface);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+  background-color: #211e21;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
   animation: submenu 0.3s 0.1s ease both;
 
   &::before {
@@ -228,13 +232,14 @@ async function logout() {
   }
   a {
     line-height: 2;
-    color: var(--text-primary) !important;
+    color: #f0e9e4 !important;
     text-shadow: none;
     display: block;
     padding: 6px 14px;
   }
   a:hover {
     background: var(--brand-soft);
+    color: var(--brand) !important;
   }
 }
 

@@ -13,6 +13,7 @@ import cameraMap from './camera-map.json'
 import { content } from './content'
 import api from '@/api'
 import { sanitizeHtml } from '@/utils/sanitize'
+import { enhanceCodeBlocks } from '@/utils/codeBlock'
 
 hljs.registerLanguage('go', go)
 hljs.registerLanguage('bash', bash)
@@ -35,8 +36,13 @@ const caption = computed(() => active.value?.title || (chapter.value === 9 ? '�
 const chapterLabel = computed(() => active.value?.category || (chapter.value === 9 ? 'THE NEXT CHAPTER' : 'INTRODUCTION'))
 const base = import.meta.env.BASE_URL
 const resumeStatus = ref('loading')
+const managedAssets = ref({})
+const modelURL = computed(() => managedAssets.value['resume.model']?.model?.src || `${base}resume/resume-ready.optimized.glb`)
 
 function stickerURL(entry) {
+  const managed = managedSticker(entry)
+  if (managed)
+    return managed
   if (!entry.image)
     return `${base}resume/${entry.originalImage}`
   if (/^https?:\/\//i.test(entry.image))
@@ -44,7 +50,11 @@ function stickerURL(entry) {
   return `${(import.meta.env.VITE_BACKEND_URL || '').replace(/\/$/, '')}/${entry.image.replace(/^\//, '')}`
 }
 
-const stickers = computed(() => entries.value.map(entry => ({ object: entry.object, image: entry.image ? stickerURL(entry) : '' })))
+function managedSticker(entry) {
+  return managedAssets.value[`resume.sticker.${String(entry.index).padStart(2, '0')}`]?.image?.src || ''
+}
+
+const stickers = computed(() => entries.value.map(entry => ({ object: entry.object, image: managedSticker(entry) || entry.image ? stickerURL(entry) : '' })))
 
 function fallbackSticker(event, entry) {
   const fallback = new URL(`${base}resume/${entry.originalImage}`, window.location.origin).href
@@ -66,6 +76,17 @@ async function loadResume() {
   catch {
     if (!disposed)
       resumeStatus.value = 'error'
+  }
+}
+
+async function loadAssets() {
+  try {
+    const { data } = await api.getAssets('resume')
+    if (!disposed)
+      managedAssets.value = data?.assets || {}
+  }
+  catch {
+    // Keep repository/profile fallbacks readable when manifest or R2 is down.
   }
 }
 
@@ -91,6 +112,7 @@ async function loadIntroduction() {
     if (disposed)
       return
     story.value?.querySelectorAll('.about-copy pre code').forEach(element => hljs.highlightElement(element))
+    enhanceCodeBlocks(story.value?.querySelector('.about-copy'))
     window.MathJax?.typeset?.()
   }
   catch {
@@ -100,12 +122,13 @@ async function loadIntroduction() {
 }
 onMounted(loadIntroduction)
 onMounted(loadResume)
+onMounted(loadAssets)
 onUnmounted(() => disposed = true)
 </script>
 
 <template>
   <main class="personal-atlas">
-    <ResumeScene ref="scene" :story="story" :stickers="stickers" @chapter="chapter = $event">
+    <ResumeScene ref="scene" :story="story" :stickers="stickers" :model-url="modelURL" @chapter="chapter = $event">
       <div class="stage-caption" :class="{ compact: chapter !== 0 }">
         <span>{{ String(chapter).padStart(2, '0') }} / {{ chapterLabel }}</span>
         <h2>{{ caption }}</h2>
@@ -138,7 +161,9 @@ onUnmounted(() => disposed = true)
         <small>08 EXPERIENCES / 一段持续生长的旅程</small>
         <p v-if="resumeStatus === 'error'" role="status">
           最新经历暂未加载，正在展示默认介绍。
-          <button type="button" class="entry-focus" @click="loadResume">重新加载</button>
+          <button type="button" class="entry-focus" @click="loadResume">
+            重新加载
+          </button>
         </p>
       </section>
       <section v-for="(entry, index) in entries" :id="`entry-${entry.index}`" :key="entry.index" class="story-section story-entry" :class="{ active: chapter === index + 1 }" :data-frame="entry.frame">

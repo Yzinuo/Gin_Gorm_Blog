@@ -61,7 +61,16 @@ const isRightClass = computed(() => props.idx % 2 === 0
 </template>
 
 <style scoped>
-.article-card { border: 1px solid var(--border-color); box-shadow: var(--shadow-card); overflow: hidden; }
+.article-card {
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.article-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(78, 65, 50, 0.1);
+}
 /* 省略文字最多 N 行 */
 .ell-4 {
   display: -webkit-box;
