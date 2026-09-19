@@ -225,12 +225,13 @@ onUnmounted(() => disposed = true)
   gap: 22px;
   font: 31px Georgia, serif;
   letter-spacing: 3px;
+  color: #ffffff;
 }
 .atlas-wordmark span {
   max-width: 140px;
   font: 10px/1.8 Georgia, serif;
   letter-spacing: 2px;
-  color: #e1d3cf;
+  color: rgba(255, 255, 255, 0.85);
 }
 .atlas-nav {
   position: fixed;
@@ -257,21 +258,26 @@ onUnmounted(() => disposed = true)
   bottom: 96px;
   pointer-events: none;
   text-shadow: 0 2px 24px #190e1bcc;
+  color: #ffffff;
 }
 .stage-caption > span {
   font-size: 10px;
   letter-spacing: 2.5px;
-  color: #eddbd5;
+  color: rgba(255, 255, 255, 0.85);
 }
 .stage-caption h2 {
   white-space: pre-line;
   font: 400 clamp(26px, 3vw, 48px)/1.4 Georgia, 'Songti SC', SimSun, serif;
   letter-spacing: 2px;
   margin: 15px 0 12px;
+  color: #ffffff;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.7);
 }
 .stage-caption p {
   font-size: 12px;
   letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.6);
 }
 .stage-bottom {
   position: absolute;
@@ -283,6 +289,7 @@ onUnmounted(() => disposed = true)
   font-size: 10px;
   letter-spacing: 1px;
   text-shadow: 0 1px 8px #000;
+  color: rgba(255, 255, 255, 0.85);
 }
 .status-dot {
   width: 5px;

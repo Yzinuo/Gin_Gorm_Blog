@@ -67,7 +67,6 @@ function scrollDown() {
 
         <!-- 副标题 / 打字机 (无毛玻璃，纯净质感) -->
         <div class="subtitle-clean">
-          <span class="subtitle-bullet">///</span>
           <span class="text-content">
             {{ typer?.output || '日日自新，步步强于昨日' }}
           </span>
@@ -278,7 +277,6 @@ function scrollDown() {
 .hero-primary:hover { background: var(--brand-hover); transform: translateY(-2px); }
 .hero-secondary { border: 1px solid rgba(255, 255, 255, 0.35); color: #ffffff; }
 .hero-secondary:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.6); }
-.subtitle-bullet { color: var(--brand); }
 .cyber-cursor { background: var(--brand); box-shadow: 0 0 8px var(--brand); }
 @media (max-width: 640px) { .banner-container { height: 100svh; min-height: 100vh; } .hero-actions { gap: 10px; } .hero-actions a { padding: 14px 16px; gap: 12px; font-size: 13px; } .subtitle-clean { font-size: 15px; } .hero-eyebrow { font-size: 10px; letter-spacing: 2px; } }
 @media (prefers-reduced-motion: reduce) { .dreamy-title, .cyber-cursor, .scroll-down-btn { animation: none; } .fade-blur-enter-active, .fade-blur-leave-active { transition: none; } }

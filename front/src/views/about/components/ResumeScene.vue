@@ -98,7 +98,7 @@ onUnmounted(() => {
   inset: 0 36% 0 0;
   overflow: hidden;
   background: radial-gradient(ellipse at 54% 44%, #82655f 0, #503c3d 38%, #251c22 78%);
-  color: var(--text-primary);
+  color: #ffffff;
 }
 .sticker-error { position: absolute; top: 95px; left: 20px; right: 20px; z-index: 2; padding: 12px; background: #211e21e8; font-size: 12px; }
 .sticker-error button { color: var(--brand); margin-left: 10px; text-decoration: underline; }
@@ -132,11 +132,12 @@ canvas {
 .scene-status p {
   font-size: 16px;
   letter-spacing: 2px;
+  color: #ffffff;
 }
 .scene-status .the-button { padding: 10px 18px; border-radius: 6px; color: #171114; background: var(--brand); cursor: pointer; }
-.scene-status .the-button:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 4px; }
+.scene-status .the-button:focus-visible { outline: 2px solid #ffffff; outline-offset: 4px; }
 .scene-status small, .scene-status > span:last-of-type {
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.7);
   font-size: 12px;
 }
 progress {
