@@ -73,8 +73,16 @@ async function logout() {
   <Transition name="slide-fade" appear>
     <div v-if="barShow" :class="navClass" class="fixed inset-x-0 top-0 z-11 h-[60px] flex items-center justify-between px-4 py-2 lg:hidden">
       <!-- 左上角标题 -->
-      <RouterLink to="/" class="text-[18px] font-bold">
-        {{ appStore.blogConfig.website_author }}
+      <RouterLink to="/" class="brand-logo brand-logo-mobile" aria-label="Zane 博客首页">
+        <div class="brand-badge brand-badge-sm">
+          <svg class="brand-badge-svg" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M7 8.5H18.5L7.5 20.5H21.5" class="badge-path" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" />
+            <circle cx="21.5" cy="8.5" r="2.2" class="badge-dot" />
+          </svg>
+        </div>
+        <span class="brand-name text-[18px]">
+          {{ appStore.blogConfig.website_author || 'Zane' }}<span class="brand-dot">.</span>
+        </span>
       </RouterLink>
       <!-- 右上角图标 -->
       <div class="flex items-center gap-2 text-2xl">
@@ -97,8 +105,19 @@ async function logout() {
     <div v-if="barShow" :class="navClass" class="fixed inset-x-0 top-0 z-11 hidden h-[60px] lg:block">
       <div class="h-full flex items-center justify-between px-9">
         <!-- 左上角标题 -->
-        <RouterLink to="/" class="text-xl font-bold">
-          {{ appStore.blogConfig.website_author }}
+        <RouterLink to="/" class="brand-logo" aria-label="Zane 博客首页">
+          <div class="brand-badge">
+            <svg class="brand-badge-svg" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M7 8.5H18.5L7.5 20.5H21.5" class="badge-path" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" />
+              <circle cx="21.5" cy="8.5" r="2.2" class="badge-dot" />
+            </svg>
+          </div>
+          <div class="brand-text-col">
+            <span class="brand-name">
+              {{ appStore.blogConfig.website_author || 'Zane' }}<span class="brand-dot">.</span>
+            </span>
+            <span class="brand-sub">DEV &amp; NOTES</span>
+          </div>
         </RouterLink>
         <!-- 右上角菜单 -->
         <div class="flex items-center space-x-4">
@@ -179,6 +198,127 @@ async function logout() {
   & .menu-btn:hover {
     color: var(--brand) !important;
   }
+}
+
+/* 左上角 Zane 专属品牌标识 */
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.25s ease;
+
+  &:hover {
+    .brand-badge {
+      transform: translateY(-1px) scale(1.04);
+      border-color: var(--brand, #df635f);
+      box-shadow: 0 0 16px rgba(223, 99, 95, 0.4), inset 0 0 10px rgba(223, 99, 95, 0.2);
+    }
+    .badge-path {
+      stroke: #ffffff;
+      filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.6));
+    }
+    .badge-dot {
+      filter: drop-shadow(0 0 6px rgba(223, 99, 95, 1));
+      transform: scale(1.15);
+      transform-origin: 21.5px 8.5px;
+    }
+    .brand-name {
+      color: #ffffff;
+    }
+    .brand-dot {
+      transform: scale(1.25);
+      filter: drop-shadow(0 0 6px var(--brand, #df635f));
+    }
+    .brand-sub {
+      color: rgba(255, 255, 255, 0.9);
+    }
+  }
+}
+
+.brand-logo-mobile {
+  gap: 8px;
+}
+
+.brand-badge {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, rgba(223, 99, 95, 0.16) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border: 1px solid rgba(223, 99, 95, 0.36);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 0 8px rgba(223, 99, 95, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.brand-badge-sm {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+
+  .brand-badge-svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.brand-badge-svg {
+  width: 20px;
+  height: 20px;
+  overflow: visible;
+
+  .badge-path {
+    stroke: #f7f4ee;
+    transition: all 0.25s ease;
+  }
+  .badge-dot {
+    fill: var(--brand, #df635f);
+    filter: drop-shadow(0 0 3px rgba(223, 99, 95, 0.7));
+    transition: all 0.25s ease;
+  }
+}
+
+.brand-text-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  line-height: 1.15;
+}
+
+.brand-name {
+  font-family: Georgia, 'Songti SC', -apple-system, BlinkMacSystemFont, serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #f7f4ee;
+  transition: color 0.2s ease;
+  display: flex;
+  align-items: baseline;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.brand-dot {
+  color: var(--brand, #df635f);
+  font-weight: 900;
+  margin-left: 1px;
+  display: inline-block;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.brand-sub {
+  font-size: 8.5px;
+  letter-spacing: 0.16em;
+  font-weight: 600;
+  color: rgba(240, 233, 228, 0.55);
+  text-transform: uppercase;
+  font-family: 'Consolas', 'Fira Code', monospace;
+  transition: color 0.2s ease;
 }
 
 .menus-item {
