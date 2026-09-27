@@ -11,6 +11,7 @@ import UploadOne from '@/components//UploadOne.vue'
 
 import { articleTypeOptions } from '@/assets/config'
 import { useTagStore } from '@/store'
+import { convertImgUrl } from '@/utils'
 import api from '@/api'
 
 defineOptions({ name: '发布文章' })
@@ -58,6 +59,36 @@ const formModel = ref({
 const btnLoading = ref(false)
 const modalVisible = ref(false)
 const newTag = ref(null) // 新增标签
+const coverPickerVisible = ref(false)
+const coverLoading = ref(false)
+const coverError = ref(false)
+const coverOptions = ref([])
+
+function openCoverPicker() {
+  coverPickerVisible.value = !coverPickerVisible.value
+  if (coverPickerVisible.value)
+    loadCovers()
+}
+
+async function loadCovers() {
+  coverLoading.value = true
+  coverError.value = false
+  try {
+    const { data } = await api.getArticleCovers()
+    coverOptions.value = Array.isArray(data) ? data : []
+  }
+  catch {
+    coverError.value = true
+  }
+  finally {
+    coverLoading.value = false
+  }
+}
+
+function chooseCover(image) {
+  formModel.value.img = image
+  coverPickerVisible.value = false
+}
 
 // 监听已选标签, 实时更新可选择的标签
 watch(() => formModel.value.tag_names, (newVal) => {
@@ -102,6 +133,7 @@ function handlePublish() {
     $message.info('请输入标题')
     return
   }
+  coverPickerVisible.value = false
   modalVisible.value = true
 }
 
@@ -258,10 +290,43 @@ function renderTag(tag, index) {
           />
         </NFormItem>
         <NFormItem label="文章缩略图" path="img">
-          <UploadOne
-            v-model:preview="formModel.img"
-            :width="220"
-          />
+          <div class="cover-field">
+            <UploadOne
+              v-model:preview="formModel.img"
+              :width="220"
+            />
+            <NButton secondary @click="openCoverPicker">
+              从历史封面选择
+            </NButton>
+            <div v-if="coverPickerVisible" class="cover-picker">
+              <p v-if="coverLoading">
+                正在读取历史封面…
+              </p>
+              <div v-else-if="coverError">
+                <span>历史封面加载失败。</span>
+                <NButton text type="primary" @click="loadCovers">
+                  重试
+                </NButton>
+              </div>
+              <p v-else-if="!coverOptions.length">
+                还没有可复用的文章封面。
+              </p>
+              <div v-else class="cover-grid">
+                <button
+                  v-for="(image, index) in coverOptions"
+                  :key="image"
+                  type="button"
+                  class="cover-option"
+                  :class="{ selected: formModel.img === image }"
+                  :aria-label="`选用历史封面 ${index + 1}`"
+                  :aria-pressed="formModel.img === image"
+                  @click="chooseCover(image)"
+                >
+                  <img :src="convertImgUrl(image)" alt="" loading="lazy">
+                </button>
+              </div>
+            </div>
+          </div>
         </NFormItem>
         <NFormItem label="置顶" path="is_top">
           <NSwitch v-model:value="formModel.is_top" />
@@ -290,4 +355,11 @@ function renderTag(tag, index) {
     list-style: revert;
   }
 }
+
+.cover-field { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; width: 100%; }
+.cover-picker { width: 100%; max-height: 330px; overflow-y: auto; padding: 12px; border: 1px solid #d9d9d9; border-radius: 8px; }
+.cover-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+.cover-option { border: 2px solid transparent; border-radius: 6px; overflow: hidden; cursor: pointer; }
+.cover-option.selected, .cover-option:focus-visible { border-color: var(--primary-color, #18a058); outline: none; }
+.cover-option img { display: block; width: 100%; height: 80px; object-fit: cover; }
 </style>

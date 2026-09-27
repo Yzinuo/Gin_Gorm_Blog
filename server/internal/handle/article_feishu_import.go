@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"path"
 	"regexp"
@@ -18,6 +19,7 @@ import (
 	"gin-blog/internal/utils/upload"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 const (
@@ -49,6 +51,16 @@ type feishuImportResult struct {
 // export. It intentionally saves a draft even when a subset of image uploads
 // fail, so the editor can repair the remaining references.
 func (*Article) ImportFeishuArchive(c *gin.Context) {
+	auth, allowed := feishuImportAuth(c)
+	if !allowed {
+		return
+	}
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxFeishuArchiveSize+(1<<20))
+	if err := c.Request.ParseMultipartForm(32 << 20); err != nil {
+		ReturnError(c, g.ErrFileReceive, "无法读取 ZIP 上传内容，请检查文件大小和格式")
+		return
+	}
+	defer c.Request.MultipartForm.RemoveAll()
 	title := strings.TrimSpace(c.PostForm("title"))
 	categoryName := strings.TrimSpace(c.PostForm("category_name"))
 	if title == "" || categoryName == "" {
@@ -57,6 +69,10 @@ func (*Article) ImportFeishuArchive(c *gin.Context) {
 	}
 	if len([]rune(title)) > 100 {
 		ReturnError(c, g.ErrRequest, "文章标题不能超过 100 个字符")
+		return
+	}
+	if len([]rune(categoryName)) > 20 {
+		ReturnError(c, g.ErrRequest, "分类名称不能超过 20 个字符")
 		return
 	}
 
@@ -71,24 +87,23 @@ func (*Article) ImportFeishuArchive(c *gin.Context) {
 			ReturnError(c, g.ErrNoTag, "标签不能为空")
 			return
 		}
+		if len([]rune(tagNames[index])) > 20 {
+			ReturnError(c, g.ErrRequest, "标签名称不能超过 20 个字符")
+			return
+		}
 	}
 
-	_, fileHeader, err := c.Request.FormFile("file")
-	if err != nil {
-		ReturnError(c, g.ErrFileReceive, err)
-		return
-	}
-	if !strings.HasSuffix(strings.ToLower(fileHeader.Filename), ".zip") || fileHeader.Size <= 0 || fileHeader.Size > maxFeishuArchiveSize {
-		ReturnError(c, g.ErrFileReceive, "请上传不超过 100 MiB 的飞书 Markdown ZIP 文件")
-		return
-	}
-
-	file, err := fileHeader.Open()
+	file, fileHeader, err := c.Request.FormFile("file")
 	if err != nil {
 		ReturnError(c, g.ErrFileReceive, err)
 		return
 	}
 	defer file.Close()
+	if !strings.HasSuffix(strings.ToLower(fileHeader.Filename), ".zip") || fileHeader.Size <= 0 || fileHeader.Size > maxFeishuArchiveSize {
+		ReturnError(c, g.ErrFileReceive, "请上传不超过 100 MiB 的飞书 Markdown ZIP 文件")
+		return
+	}
+
 	archiveBytes, err := io.ReadAll(io.LimitReader(file, maxFeishuArchiveSize+1))
 	if err != nil || len(archiveBytes) > maxFeishuArchiveSize {
 		ReturnError(c, g.ErrFileReceive, "读取 ZIP 文件失败或文件过大")
@@ -102,7 +117,6 @@ func (*Article) ImportFeishuArchive(c *gin.Context) {
 	}
 
 	content, failures, uploadedCount := replaceArchiveImages(articleContent, markdownPath, files)
-	auth, _ := CurrentUserAuth(c)
 	db := GetDB(c)
 	article := model.Article{
 		Title: title, Content: content, Status: model.STATUS_DRAFT,
@@ -115,6 +129,46 @@ func (*Article) ImportFeishuArchive(c *gin.Context) {
 	}
 
 	ReturnSuccess(c, feishuImportResult{ArticleID: article.ID, FailedImages: failures, UploadedImages: uploadedCount})
+}
+
+func feishuImportAuth(c *gin.Context) (*model.UserAuth, bool) {
+	auth, err := CurrentUserAuth(c)
+	if err != nil || auth == nil {
+		ReturnError(c, g.ErrUserAuth, err)
+		return nil, false
+	}
+	if auth.IsSuper {
+		return auth, true
+	}
+	roleIDs := make([]int, 0, len(auth.Roles))
+	for _, role := range auth.Roles {
+		if role != nil {
+			roleIDs = append(roleIDs, role.ID)
+		}
+	}
+	if len(roleIDs) == 0 {
+		ReturnError(c, g.ErrPermission, nil)
+		return nil, false
+	}
+	resource, err := model.GetResource(GetDB(c), "/article/import", http.MethodPost)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ReturnError(c, g.ErrPermission, nil)
+		} else {
+			ReturnError(c, g.ErrDbOp, err)
+		}
+		return nil, false
+	}
+	var count int64
+	if err := GetDB(c).Model(&model.RoleResource{}).Where("resource_id = ? AND role_id IN ?", resource.ID, roleIDs).Count(&count).Error; err != nil {
+		ReturnError(c, g.ErrDbOp, err)
+		return nil, false
+	}
+	if count == 0 {
+		ReturnError(c, g.ErrPermission, nil)
+		return nil, false
+	}
+	return auth, true
 }
 
 func readFeishuArchive(archiveBytes []byte) (string, string, map[string]*zip.File, error) {

@@ -60,14 +60,20 @@ request.interceptors.response.use(
   (error) => {
     // 主要使用业务状态码决定状态, 一般不根据 HTTP 状态码进行操作
     const responseData = error.response?.data
-    const { message, data } = responseData
-    if (error.response.status === 500) {
+    const { message, data } = responseData || {}
+    if (error.response?.status === 413) {
+      window.$message.error('文件超过服务器允许的上传大小')
+    }
+    else if (error.response?.status === 500) {
       if (message && data) {
         window.$message.error(`${message} ${data}`)
       }
       else {
         window.$message.error('服务端异常')
       }
+    }
+    else if (!error.response) {
+      window.$message.error(error.code === 'ECONNABORTED' ? '请求超时，请稍后重试' : '网络连接失败，请检查网络后重试')
     }
     return Promise.reject(error)
   },

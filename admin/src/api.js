@@ -9,6 +9,7 @@ export default {
 
   // 文章相关接口
   getArticles: (params = {}) => request.get('/article/list', { params }),
+  getArticleCovers: () => request.get('/article/covers'),
   getArticleById: id => request.get(`/article/${id}`),
   saveOrUpdateArticle: data => request.post('/article', data),
   deleteArticle: (data = []) => request.delete('/article', { data }), // 物理删除
@@ -16,7 +17,7 @@ export default {
   updateArticleTop: (id, is_top) => request.put('/article/top', { id, is_top }), // 修改文章置顶
   exportArticles: (data = []) => request.post('/article/export', data), // 导出文章
   importArticles: data => request.post('/article/import', data), // 导入文章
-  importFeishuArchive: data => request.post('/article/import/feishu', data),
+  importFeishuArchive: data => request.post('/article/import/feishu', data, { timeout: 1800000 }),
 
   // 分类相关接口
   getCategorys: (params = {}) => request.get('/category/list', { params }),

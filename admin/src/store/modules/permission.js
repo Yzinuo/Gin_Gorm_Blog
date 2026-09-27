@@ -21,7 +21,17 @@ export const usePermissionStore = defineStore('permission', {
     // ! 后端生成路由: 后端返回的就是最终路由, 处理成前端格式
     async generateRoutesBack() {
       const resp = await api.getUserMenus() // 调用接口获取后端传来的路由
-      this.accessRoutes = buildRoutes(resp.data) // 处理成前端路由格式
+      const menus = Array.isArray(resp.data) ? resp.data : []
+      const routes = buildRoutes(menus) // 处理成前端路由格式
+      // The legacy menu table has no sticker editor row. Expose the editor to
+      // users who can already edit About, without requiring a production DB edit.
+      const canEditAbout = menus.some(menu => menu.children?.some(child => child.component === '/setting/about'))
+      const hasStickerMenu = menus.some(menu => menu.component === '/setting/resume-stickers'
+        || menu.children?.some(child => child.component === '/setting/resume-stickers'))
+      const stickerRoute = asyncRoutes.find(route => route.name === 'ResumeStickers')
+      if (canEditAbout && !hasStickerMenu && stickerRoute)
+        routes.push(stickerRoute)
+      this.accessRoutes = routes
       return this.accessRoutes
     },
     // ! 前端控制路由权限: 根据角色过滤路由

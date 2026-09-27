@@ -48,15 +48,14 @@ function scrollDown() {
 <template>
   <div class="banner-container">
     <!-- WebGL X-Ray 核心画布 (透视人物) -->
-    <XRayCanvas class="xray-canvas-layer" :asset="xrayAsset" />
+    <div class="xray-canvas-layer">
+      <XRayCanvas :asset="xrayAsset" />
+    </div>
 
     <!-- 顶部/前景层：文字与信息浮于左方 -->
     <div class="banner-content-overlay">
       <div class="hero-left-col">
-        <p class="hero-eyebrow">
-          DEVELOPER / DREAMER / CREATOR
-        </p>
-        <!-- 切换标题 (原样式，居左排版) -->
+        <!-- 标题与按钮保持在主视觉左侧的留白区域。 -->
         <div class="title-wrapper">
           <Transition name="fade-blur">
             <h1 :key="currentText" class="dreamy-title">
@@ -117,8 +116,10 @@ function scrollDown() {
   max-width: 1600px;
   margin: 0 auto;
 
-  @media (max-width: 768px) {
+  @media (max-width: 900px) {
     padding: 0 1.5rem;
+    align-items: flex-end;
+    padding-bottom: clamp(110px, 16vh, 170px);
   }
 }
 
@@ -128,31 +129,41 @@ function scrollDown() {
   flex-direction: column;
   align-items: flex-start;
   text-align: left;
-  max-width: 650px;
+  width: min(21vw, 360px);
+  max-width: 100%;
+
+  @media (max-width: 900px) {
+    width: 100%;
+    max-width: 420px;
+  }
 }
 
 /* 标题容器：Grid 布局保持重叠切换 */
 .title-wrapper {
-  height: 120px;
+  width: 100%;
+  min-height: clamp(60px, 8vw, 110px);
   display: grid;
   place-items: start;
   align-items: center;
-  @media (min-width: 1024px) {
-    height: 160px;
-  }
 }
 
 /* 原样式 Dreamy 标题 (保留 Titan One、描边、光效与呼吸动效，居左对齐) */
 .dreamy-title {
   grid-area: 1 / 1;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   font-family: Georgia, 'Songti SC', SimSun, serif;
-  font-size: clamp(3rem, 12vw, 4.5rem);
+  font-size: clamp(2rem, 3.7vw, 4.4rem);
   font-weight: 400;
   line-height: 1.1;
   text-align: left;
   color: #ffffff;
   pointer-events: auto;
   user-select: none;
+
+  @media (max-width: 900px) {
+    font-size: clamp(2.2rem, 8vw, 3.5rem);
+  }
 
   /* 柔和描边 (0.4 透明度) */
   -webkit-text-stroke: 0;
@@ -165,7 +176,6 @@ function scrollDown() {
   animation: breathe 4s ease-in-out infinite;
 
   @media (min-width: 1024px) {
-    font-size: 6.8rem;
     text-shadow:
       0 8px 24px rgba(0, 0, 0, 0.45),
       0 0 35px rgba(255, 60, 60, 0.4);
@@ -175,7 +185,7 @@ function scrollDown() {
 /* 纯净无毛玻璃副标题 */
 .subtitle-clean {
   font-family: 'Consolas', 'Fira Code', monospace;
-  font-size: 1.15rem;
+  font-size: clamp(0.875rem, 1.3vw, 1.15rem);
   font-weight: 500;
   color: rgba(255, 255, 255, 0.9);
   margin-top: 1rem;
@@ -188,12 +198,6 @@ function scrollDown() {
   @media (min-width: 1024px) {
     font-size: 1.3rem;
   }
-}
-
-.subtitle-bullet {
-  color: #ff3b3b;
-  font-weight: 700;
-  letter-spacing: 2px;
 }
 
 .cyber-cursor {
@@ -270,14 +274,13 @@ function scrollDown() {
     linear-gradient(90deg, rgba(23, 15, 20, 0.88) 0%, rgba(23, 15, 20, 0.35) 45%, transparent 70%),
     linear-gradient(180deg, transparent 0%, transparent 75%, rgba(23, 15, 20, 0.5) 90%, #170f14 100%);
 }
-.hero-eyebrow { color: var(--brand); font: 11px Consolas, monospace; letter-spacing: 3px; margin-bottom: 20px; }
-.hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; pointer-events: auto; }
+.hero-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; margin-top: 34px; pointer-events: auto; }
 .hero-actions a { display: inline-flex; align-items: center; justify-content: space-between; gap: 22px; padding: 15px 23px; font-size: 14px; transition: background 180ms, transform 180ms; }
 .hero-primary { background: var(--brand); color: #ffffff; }
 .hero-primary:hover { background: var(--brand-hover); transform: translateY(-2px); }
 .hero-secondary { border: 1px solid rgba(255, 255, 255, 0.35); color: #ffffff; }
 .hero-secondary:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.6); }
 .cyber-cursor { background: var(--brand); box-shadow: 0 0 8px var(--brand); }
-@media (max-width: 640px) { .banner-container { height: 100svh; min-height: 100vh; } .hero-actions { gap: 10px; } .hero-actions a { padding: 14px 16px; gap: 12px; font-size: 13px; } .subtitle-clean { font-size: 15px; } .hero-eyebrow { font-size: 10px; letter-spacing: 2px; } }
+@media (max-width: 900px) { .xray-canvas-layer { height: 42vh; bottom: auto; } .banner-container::after { background: linear-gradient(180deg, transparent 0%, rgba(23, 15, 20, .35) 30%, #170f14 43%); } .hero-actions { flex-direction: row; flex-wrap: wrap; gap: 10px; margin-top: 22px; } .hero-actions a { padding: 14px 16px; gap: 12px; font-size: 13px; } .subtitle-clean { font-size: 15px; } }
 @media (prefers-reduced-motion: reduce) { .dreamy-title, .cyber-cursor, .scroll-down-btn { animation: none; } .fade-blur-enter-active, .fade-blur-leave-active { transition: none; } }
 </style>

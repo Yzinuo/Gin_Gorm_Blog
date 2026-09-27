@@ -62,12 +62,12 @@ async function loadInitialArticles() {
 }
 onMounted(loadInitialArticles)
 
-// 过滤 Markdown 符号: 先转 Html 再去除 Html 标签
+// 卡片只展示纯文本摘要，保留文章详情页的 Markdown 渲染。
 function filterMdSymbol(md) {
-  return marked(md) // 转 HTML
-    .replace(/<\/?[^>]*>/g, '') // 正则去除 Html 标签
-    .replace(/[|]*\n/, '')
-    .replace(/&npsp;/gi, '')
+  const template = document.createElement('template')
+  template.innerHTML = marked(md || '')
+  template.content.querySelectorAll('pre, script, style, table').forEach(element => element.remove())
+  return (template.content.textContent || '').replace(/\s+/g, ' ').trim()
 }
 
 function backTop() {

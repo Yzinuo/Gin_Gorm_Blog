@@ -81,6 +81,7 @@ uniform sampler2D u_texBefore;
 uniform sampler2D u_texAfter;
 uniform vec2 u_resolution;
 uniform vec2 u_imageResolution;
+uniform float u_imageAlign;
 uniform vec2 u_mouse;       // 归一化屏幕坐标 [0, 1]
 uniform vec2 u_velocity;    // 移动速度矢量
 uniform float u_radius;     // 像素半径
@@ -100,7 +101,7 @@ vec2 getCoverUV(vec2 uv, vec2 screenRes, vec2 imgRes) {
   } else {
     // 屏幕更高，按高度撑满，X方向左右居中裁切
     float scale = screenRatio / imgRatio;
-    newUV.x = (uv.x - 0.5) * scale + 0.5;
+    newUV.x = uv.x * scale + (1.0 - scale) * u_imageAlign;
   }
   return newUV;
 }
@@ -356,6 +357,7 @@ function render() {
   // 设置 Uniform 变量
   const uRes = gl.getUniformLocation(program, 'u_resolution')
   const uImgRes = gl.getUniformLocation(program, 'u_imageResolution')
+  const uImageAlign = gl.getUniformLocation(program, 'u_imageAlign')
   const uMouse = gl.getUniformLocation(program, 'u_mouse')
   const uVel = gl.getUniformLocation(program, 'u_velocity')
   const uRad = gl.getUniformLocation(program, 'u_radius')
@@ -364,6 +366,7 @@ function render() {
 
   gl.uniform2f(uRes, width, height)
   gl.uniform2f(uImgRes, CONFIG.imgWidth, CONFIG.imgHeight)
+  gl.uniform1f(uImageAlign, window.innerWidth <= 900 ? 0.5 : 0.0)
   // 传入归一化的物理坐标
   gl.uniform2f(uMouse, state.currentX / width, state.currentY / height)
   gl.uniform2f(uVel, state.velocityX, state.velocityY)
@@ -572,7 +575,11 @@ onUnmounted(() => {
 }
 
 .xray-fallback { position: absolute; inset: 0; display: block; }
-.xray-fallback img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.xray-fallback img { width: 100%; height: 100%; display: block; object-fit: cover; object-position: left center; }
+
+@media (max-width: 900px) {
+  .xray-fallback img { object-position: center; }
+}
 
 .xray-canvas {
   position: relative;

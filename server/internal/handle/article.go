@@ -188,6 +188,42 @@ func (*Article) GetList(c *gin.Context) {
 	})
 }
 
+// GetCovers lists article cover URLs for reuse in the admin editor.
+func (*Article) GetCovers(c *gin.Context) {
+	auth, err := CurrentUserAuth(c)
+	if err != nil || auth == nil {
+		ReturnError(c, g.ErrUserAuth, err)
+		return
+	}
+	db := GetDB(c)
+	if !auth.IsSuper {
+		allowed := false
+		for _, role := range auth.Roles {
+			resources, checkErr := model.CheckResourceOfTheRole(db, role.ID)
+			if checkErr != nil {
+				ReturnError(c, g.ErrDbOp, checkErr)
+				return
+			}
+			for _, resource := range resources {
+				if resource.Url == "/article/list" && resource.Method == "GET" {
+					allowed = true
+					break
+				}
+			}
+		}
+		if !allowed {
+			ReturnError(c, g.ErrPermission, nil)
+			return
+		}
+	}
+	covers, err := model.GetArticleCovers(db)
+	if err != nil {
+		ReturnError(c, g.ErrDbOp, err)
+		return
+	}
+	ReturnSuccess(c, covers)
+}
+
 // 通过GetArticle获取详细信息
 func (*Article) GetDetail(c *gin.Context) {
 	Id, err := strconv.Atoi(c.Param("id"))

@@ -149,6 +149,18 @@ func GetArticleList(db *gorm.DB, page, size int, title string, isDelete *bool, s
 	return List, total, result.Error
 }
 
+// GetArticleCovers returns the distinct images still referenced by articles.
+// The image value is already the public R2 URL when the article used R2 storage.
+func GetArticleCovers(db *gorm.DB) ([]string, error) {
+	covers := make([]string, 0)
+	err := db.Model(&Article{}).
+		Where("img <> ''").
+		Group("img").
+		Order("MAX(updated_at) DESC").
+		Pluck("img", &covers).Error
+	return covers, err
+}
+
 // 根据当前的标签，推荐文章
 func GetRecommandList(db *gorm.DB, id, n int) (list []RecommendArticleVO, err error) {
 	// sub1: 查出对应标签列表

@@ -65,6 +65,9 @@ func RegisterAdminHandler(r *gin.Engine) {
 
 	auth.GET("/home", blogInfoAPI.GetBlogInfo) // 后台首页信息获取
 	auth.POST("/upload", uploadAPI.UploadFile) //文件上传
+	// The legacy resource table has no Feishu import row. Authenticate before
+	// ListenOnline, then check the existing article import permission in handler.
+	r.POST("/api/article/import/feishu", middleware.JWTAuthRequired(), middleware.ListenOnline(), articleAPI.ImportFeishuArchive)
 	asset := auth.Group("/asset")
 	asset.Use(middleware.JWTAuthRequired(), middleware.AssetPermission(), middleware.AssetMutationRateLimit())
 	{
@@ -104,6 +107,7 @@ func RegisterAdminHandler(r *gin.Engine) {
 	article := auth.Group("article")
 	{
 		article.GET("list", articleAPI.GetList) //查询文章
+		article.GET("covers", middleware.JWTAuthRequired(), articleAPI.GetCovers)
 		article.POST("", articleAPI.SavaOrUpdate)
 		article.PUT("top", articleAPI.UPdateTOP)
 		article.GET("/:id", articleAPI.GetDetail) //文章的详细
@@ -111,7 +115,6 @@ func RegisterAdminHandler(r *gin.Engine) {
 		article.DELETE("", articleAPI.DeleteArticle)
 		article.POST("/export", articleAPI.Export)
 		article.POST("/import", articleAPI.Import) // 导入文章
-		article.POST("/import/feishu", articleAPI.ImportFeishuArchive)
 	}
 	comment := auth.Group("comment")
 	{

@@ -10,7 +10,6 @@ const canvas = ref(null)
 const status = ref('idle')
 const progress = ref(0)
 const attempt = ref(0)
-const stickerError = ref(false)
 let scene
 let disposed = false
 
@@ -29,7 +28,6 @@ async function start() {
     getSections: () => props.story?.querySelectorAll('[data-frame]') || [],
     getStickers: () => props.stickers,
     modelURL: props.modelUrl || `${import.meta.env.BASE_URL}resume/resume-ready.glb`,
-    onStickerError: failed => stickerError.value = failed,
     onProgress: value => progress.value = value,
     onReady: () => status.value = 'ready',
     onChapter: value => emit('chapter', value),
@@ -83,12 +81,6 @@ onUnmounted(() => {
       </template>
     </div>
     <slot v-if="status === 'ready'" />
-    <div v-if="status === 'ready' && stickerError" class="sticker-error" role="status">
-      部分贴纸加载失败，暂用原图。
-      <button type="button" @click="scene?.updateStickers()">
-        重试
-      </button>
-    </div>
   </div>
 </template>
 
@@ -100,8 +92,6 @@ onUnmounted(() => {
   background: radial-gradient(ellipse at 54% 44%, #82655f 0, #503c3d 38%, #251c22 78%);
   color: #ffffff;
 }
-.sticker-error { position: absolute; top: 95px; left: 20px; right: 20px; z-index: 2; padding: 12px; background: #211e21e8; font-size: 12px; }
-.sticker-error button { color: var(--brand); margin-left: 10px; text-decoration: underline; }
 canvas {
   display: block;
   width: 100%;

@@ -1,7 +1,7 @@
 <script setup>
-import { defineOptions, h, onActivated, onMounted, ref } from 'vue'
+import { computed, defineOptions, h, onActivated, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { NButton, NForm, NFormItem, NImage, NInput, NPopconfirm, NSelect, NSwitch, NTabPane, NTabs, NTag, NUpload } from 'naive-ui'
+import { NButton, NForm, NFormItem, NImage, NInput, NPopconfirm, NSelect, NSwitch, NTabPane, NTabs, NTag } from 'naive-ui'
 
 import CommonPage from '@/components/common/CommonPage.vue'
 import QueryItem from '@/components/crud/QueryItem.vue'
@@ -21,6 +21,8 @@ const router = useRouter()
 
 const categoryOptions = ref([])
 const tagOptions = ref([])
+const importCategoryOptions = computed(() => categoryOptions.value.map(item => ({ value: item.label, label: item.label })))
+const importTagOptions = computed(() => tagOptions.value.map(item => ({ value: item.label, label: item.label })))
 
 const $table = ref(null)
 const feishuImportVisible = ref(false)
@@ -51,8 +53,8 @@ const { handleDelete } = useCRUD({
 })
 
 onMounted(() => {
-  api.getCategoryOption().then(res => (categoryOptions.value = res.data))
-  api.getTagOption().then(res => (tagOptions.value = res.data))
+  api.getCategoryOption().then(res => (categoryOptions.value = res.data.map(item => ({ value: item.id, label: item.label }))))
+  api.getTagOption().then(res => (tagOptions.value = res.data.map(item => ({ value: item.id, label: item.label }))))
   handleChangeTab('all') // 默认查看全部
 })
 
@@ -314,13 +316,14 @@ function openFeishuImport() {
   feishuImportVisible.value = true
 }
 
-function handleFeishuArchiveChange({ file }) {
-  feishuArchive.value = file?.file ?? null
+function handleFeishuArchiveChange(event) {
+  feishuArchive.value = event.target.files?.[0] ?? null
+  event.target.value = ''
 }
 
 async function submitFeishuImport() {
   const form = feishuImportForm.value
-  if (!form.title.trim() || !form.category_name || !form.tag_names.length || !feishuArchive.value) {
+  if (!form.title.trim() || !form.category_name?.trim() || !form.tag_names.length || !feishuArchive.value) {
     $message.error('请填写标题、分类、标签并选择 ZIP 文件')
     return
   }
@@ -328,12 +331,25 @@ async function submitFeishuImport() {
     $message.error('请选择飞书导出的 ZIP 文件')
     return
   }
+  if (feishuArchive.value.size === 0 || feishuArchive.value.size > 100 * 1024 * 1024) {
+    $message.error('ZIP 文件大小需在 100 MiB 以内')
+    return
+  }
+  if ([...form.category_name.trim()].length > 20 || form.tag_names.some(name => [...name.trim()].length > 20)) {
+    $message.error('分类和标签名称不能超过 20 个字符')
+    return
+  }
 
   const data = new FormData()
   data.append('file', feishuArchive.value)
   data.append('title', form.title.trim())
-  data.append('category_name', form.category_name)
-  data.append('tag_names', JSON.stringify(form.tag_names))
+  const tagNames = form.tag_names.map(name => name.trim()).filter(Boolean)
+  if (!tagNames.length) {
+    $message.error('请至少填写一个有效标签')
+    return
+  }
+  data.append('category_name', form.category_name.trim())
+  data.append('tag_names', JSON.stringify(tagNames))
 
   feishuImportLoading.value = true
   try {
@@ -491,33 +507,37 @@ function downloadFile(content, fileName) {
     >
       <NForm label-placement="left" :label-width="80">
         <NFormItem label="文章标题" required>
-          <NInput v-model:value="feishuImportForm.title" placeholder="输入文章标题" />
+          <NInput v-model:value="feishuImportForm.title" :maxlength="100" show-count placeholder="输入文章标题" />
         </NFormItem>
         <NFormItem label="文章分类" required>
-          <NSelect
-            v-model:value="feishuImportForm.category_name"
-            filterable tag
-            placeholder="选择或输入分类"
-            :options="categoryOptions"
-          />
+          <div class="w-full">
+            <NSelect
+              v-model:value="feishuImportForm.category_name"
+              filterable tag
+              placeholder="选择或输入分类"
+              :options="importCategoryOptions"
+            />
+            <small class="block opacity-60">最多 20 个字符</small>
+          </div>
         </NFormItem>
         <NFormItem label="文章标签" required>
-          <NSelect
-            v-model:value="feishuImportForm.tag_names"
-            multiple filterable tag
-            placeholder="选择或输入标签"
-            :options="tagOptions"
-          />
+          <div class="w-full">
+            <NSelect
+              v-model:value="feishuImportForm.tag_names"
+              multiple filterable tag
+              placeholder="选择或输入标签"
+              :options="importTagOptions"
+            />
+            <small class="block opacity-60">每个标签最多 20 个字符</small>
+          </div>
         </NFormItem>
         <NFormItem label="飞书 ZIP" required>
-          <NUpload
-            accept=".zip,application/zip"
-            :default-upload="false"
-            :max="1"
-            @change="handleFeishuArchiveChange"
-          >
-            <NButton>选择飞书导出的 ZIP</NButton>
-          </NUpload>
+          <div class="w-full">
+            <div class="flex items-center gap-3">
+              <input type="file" accept=".zip,application/zip" class="max-w-full" @change="handleFeishuArchiveChange">
+            </div>
+            <small class="block opacity-60">仅支持 ZIP，最大 100 MiB。导入后会创建草稿。</small>
+          </div>
         </NFormItem>
       </NForm>
     </CrudModal>

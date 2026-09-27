@@ -40,21 +40,19 @@ const managedAssets = ref({})
 const modelURL = computed(() => managedAssets.value['resume.model']?.model?.src || `${base}resume/resume-ready.optimized.glb`)
 
 function stickerURL(entry) {
-  const managed = managedSticker(entry)
-  if (managed)
-    return managed
-  if (!entry.image)
-    return `${base}resume/${entry.originalImage}`
-  if (/^https?:\/\//i.test(entry.image))
-    return entry.image
-  return `${(import.meta.env.VITE_BACKEND_URL || '').replace(/\/$/, '')}/${entry.image.replace(/^\//, '')}`
+  if (entry.image) {
+    if (/^https?:\/\//i.test(entry.image))
+      return entry.image
+    return `${(import.meta.env.VITE_BACKEND_URL || '').replace(/\/$/, '')}/${entry.image.replace(/^\//, '')}`
+  }
+  return managedSticker(entry) || `${base}resume/${entry.originalImage}`
 }
 
 function managedSticker(entry) {
   return managedAssets.value[`resume.sticker.${String(entry.index).padStart(2, '0')}`]?.image?.src || ''
 }
 
-const stickers = computed(() => entries.value.map(entry => ({ object: entry.object, image: managedSticker(entry) || entry.image ? stickerURL(entry) : '' })))
+const stickers = computed(() => entries.value.map(entry => ({ object: entry.object, image: (entry.image || managedSticker(entry)) ? stickerURL(entry) : '' })))
 
 function fallbackSticker(event, entry) {
   const fallback = new URL(`${base}resume/${entry.originalImage}`, window.location.origin).href

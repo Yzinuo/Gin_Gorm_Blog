@@ -27,7 +27,8 @@ function imageURL(value) {
     return `${import.meta.env.VITE_BLOG_URL || (import.meta.env.DEV ? 'http://localhost:3333' : window.location.origin)}/resume/stickers/${encodeURIComponent(originals[selected.value])}.png`
   if (/^https?:\/\//i.test(value))
     return value
-  return `${import.meta.env.VITE_SERVER_URL.replace(/\/$/, '')}/${value.replace(/^\//, '')}`
+  const serverURL = (import.meta.env.VITE_SERVER_URL || window.location.origin).replace(/\/$/, '')
+  return `${serverURL}/${value.replace(/^\//, '')}`
 }
 
 async function load() {
@@ -55,7 +56,7 @@ async function upload(event) {
   const uploadController = new AbortController()
   const abort = () => uploadController.abort()
   controller.signal.addEventListener('abort', abort, { once: true })
-  const timer = setTimeout(abort, 30000)
+  const timer = setTimeout(abort, 120000)
   uploading.value = true
   imageError.value = ''
   try {
